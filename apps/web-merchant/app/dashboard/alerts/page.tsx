@@ -1,10 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { AlertCircle, CheckCircle2, Clock, Filter } from 'lucide-react';
+import { StatCard } from '@/components/ui/stat-card';
+import { SkeletonCard } from '@/components/ui/skeleton';
+import { AlertCard } from '@/components/alerts/AlertCard';
+import { AlertCircle, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { staggerContainer, fadeInUp } from '@/lib/animations';
 
 interface MaintenanceAlert {
   id: string;
@@ -107,24 +110,6 @@ export default function AlertsPage() {
     return alert.status.toLowerCase() === filter;
   });
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'CRITICAL': return 'bg-red-600 hover:bg-red-700';
-      case 'HIGH': return 'bg-orange-600 hover:bg-orange-700';
-      case 'MEDIUM': return 'bg-yellow-600 hover:bg-yellow-700';
-      case 'LOW': return 'bg-blue-600 hover:bg-blue-700';
-      default: return 'bg-gray-600 hover:bg-gray-700';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'RESOLVED': return <CheckCircle2 className="h-5 w-5 text-green-600" />;
-      case 'ACKNOWLEDGED': return <Clock className="h-5 w-5 text-blue-600" />;
-      default: return <AlertCircle className="h-5 w-5 text-orange-600" />;
-    }
-  };
-
   const stats = {
     total: alerts.length,
     open: alerts.filter(a => a.status === 'OPEN').length,
@@ -134,143 +119,155 @@ export default function AlertsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <AlertCircle className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading alerts...</p>
+      <div className="container mx-auto py-8">
+        {/* Header Skeleton */}
+        <div className="mb-8">
+          <div className="h-10 w-80 bg-muted rounded mb-2 skeleton" />
+          <div className="h-5 w-96 bg-muted rounded skeleton" />
+        </div>
+
+        {/* Stats Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-24 bg-muted rounded-2xl skeleton" />
+          ))}
+        </div>
+
+        {/* Filter Skeleton */}
+        <div className="flex space-x-2 mb-6">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-10 w-32 bg-muted rounded skeleton" />
+          ))}
+        </div>
+
+        {/* Alerts Skeleton */}
+        <div className="space-y-4">
+          {[...Array(3)].map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Maintenance Alerts</h1>
-        <p className="text-muted-foreground mt-1">
-          Monitor and manage equipment maintenance alerts
+    <motion.div
+      className="container mx-auto py-8"
+      initial="hidden"
+      animate="visible"
+      variants={staggerContainer}
+    >
+      {/* Header */}
+      <motion.div variants={fadeInUp} className="mb-8">
+        <h1 className="text-4xl font-heading font-bold bg-brand-gradient bg-clip-text text-transparent">
+          Maintenance Alerts
+        </h1>
+        <p className="text-muted-foreground mt-2 text-lg">
+          Monitor and manage equipment maintenance alerts with real-time insights
         </p>
-      </div>
+      </motion.div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Total Alerts</CardDescription>
-            <CardTitle className="text-3xl">{stats.total}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Open</CardDescription>
-            <CardTitle className="text-3xl text-orange-600">{stats.open}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Acknowledged</CardDescription>
-            <CardTitle className="text-3xl text-blue-600">{stats.acknowledged}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Resolved</CardDescription>
-            <CardTitle className="text-3xl text-green-600">{stats.resolved}</CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
+      {/* Stats - Using StatCard */}
+      <motion.div
+        variants={fadeInUp}
+        className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8"
+      >
+        <StatCard
+          title="Total Alerts"
+          value={stats.total}
+          icon={AlertTriangle}
+          variant="default"
+        />
+        <StatCard
+          title="Open Alerts"
+          value={stats.open}
+          icon={AlertCircle}
+          variant={stats.open > 0 ? 'warning' : 'success'}
+        />
+        <StatCard
+          title="Acknowledged"
+          value={stats.acknowledged}
+          icon={Clock}
+          variant="info"
+        />
+        <StatCard
+          title="Resolved"
+          value={stats.resolved}
+          icon={CheckCircle2}
+          variant="success"
+        />
+      </motion.div>
 
       {/* Filters */}
-      <div className="flex space-x-2 mb-6">
-        <Button variant={filter === 'all' ? 'default' : 'outline'} onClick={() => setFilter('all')}>
-          All ({stats.total})
+      <motion.div variants={fadeInUp} className="flex flex-wrap gap-2 mb-8">
+        <Button
+          variant={filter === 'all' ? 'default' : 'outline'}
+          onClick={() => setFilter('all')}
+          className={filter === 'all' ? 'bg-brand-gradient' : ''}
+        >
+          All Alerts ({stats.total})
         </Button>
-        <Button variant={filter === 'open' ? 'default' : 'outline'} onClick={() => setFilter('open')}>
+        <Button
+          variant={filter === 'open' ? 'default' : 'outline'}
+          onClick={() => setFilter('open')}
+          className={filter === 'open' ? 'bg-warning-gradient' : ''}
+        >
+          <AlertCircle className="h-4 w-4 mr-2" />
           Open ({stats.open})
         </Button>
-        <Button variant={filter === 'acknowledged' ? 'default' : 'outline'} onClick={() => setFilter('acknowledged')}>
+        <Button
+          variant={filter === 'acknowledged' ? 'default' : 'outline'}
+          onClick={() => setFilter('acknowledged')}
+          className={filter === 'acknowledged' ? 'bg-primary-600' : ''}
+        >
+          <Clock className="h-4 w-4 mr-2" />
           Acknowledged ({stats.acknowledged})
         </Button>
-        <Button variant={filter === 'resolved' ? 'default' : 'outline'} onClick={() => setFilter('resolved')}>
+        <Button
+          variant={filter === 'resolved' ? 'default' : 'outline'}
+          onClick={() => setFilter('resolved')}
+          className={filter === 'resolved' ? 'bg-eco-gradient' : ''}
+        >
+          <CheckCircle2 className="h-4 w-4 mr-2" />
           Resolved ({stats.resolved})
         </Button>
-      </div>
+      </motion.div>
 
-      {/* Alerts List */}
-      <div className="space-y-4">
+      {/* Alerts List with AnimatePresence for smooth exits */}
+      <motion.div variants={fadeInUp}>
         {filteredAlerts.length === 0 ? (
-          <Card>
-            <CardContent className="py-16 text-center">
-              <CheckCircle2 className="h-12 w-12 mx-auto text-green-600 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Alerts Found</h3>
-              <p className="text-muted-foreground">
-                {filter === 'all' ? 'All equipment is running smoothly!' : `No ${filter} alerts.`}
-              </p>
-            </CardContent>
-          </Card>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center py-16 rounded-2xl bg-gradient-to-br from-eco-50 to-primary-50 dark:from-eco-950/20 dark:to-primary-950/20"
+          >
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-eco-gradient mb-4">
+              <CheckCircle2 className="h-8 w-8 text-white" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">
+              {filter === 'all' ? 'All Clear!' : 'No Alerts'}
+            </h3>
+            <p className="text-muted-foreground max-w-md mx-auto">
+              {filter === 'all'
+                ? 'All equipment is running smoothly with no maintenance alerts.'
+                : `No ${filter} alerts at this time.`}
+            </p>
+          </motion.div>
         ) : (
-          filteredAlerts.map((alert) => (
-            <Card key={alert.id} className="overflow-hidden">
-              <div className="flex">
-                <div className={`w-2 ${getSeverityColor(alert.severity)}`} />
-                <div className="flex-1 p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-start gap-3">
-                      {getStatusIcon(alert.status)}
-                      <div>
-                        <h3 className="font-semibold text-lg">{alert.title}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {alert.equipmentName} • {new Date(alert.createdAt).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Badge className={`${getSeverityColor(alert.severity)} text-white`}>
-                        {alert.severity}
-                      </Badge>
-                      <Badge variant="outline">{alert.type.replace(/_/g, ' ')}</Badge>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3 mb-4">
-                    <div>
-                      <p className="text-sm font-medium mb-1">Description:</p>
-                      <p className="text-sm text-muted-foreground">{alert.description}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium mb-1">Recommendation:</p>
-                      <p className="text-sm text-muted-foreground">{alert.recommendation}</p>
-                    </div>
-                  </div>
-
-                  {alert.status === 'OPEN' && (
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={() => handleAcknowledge(alert.id)}>
-                        Acknowledge
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleResolve(alert.id)}>
-                        Mark as Resolved
-                      </Button>
-                    </div>
-                  )}
-
-                  {alert.status === 'ACKNOWLEDGED' && (
-                    <Button size="sm" onClick={() => handleResolve(alert.id)}>
-                      Mark as Resolved
-                    </Button>
-                  )}
-
-                  {alert.status === 'RESOLVED' && alert.resolvedAt && (
-                    <p className="text-sm text-green-600">
-                      ✓ Resolved on {new Date(alert.resolvedAt).toLocaleString()}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </Card>
-          ))
+          <div className="space-y-4">
+            <AnimatePresence mode="popLayout">
+              {filteredAlerts.map((alert) => (
+                <AlertCard
+                  key={alert.id}
+                  alert={alert}
+                  onAcknowledge={handleAcknowledge}
+                  onResolve={handleResolve}
+                />
+              ))}
+            </AnimatePresence>
+          </div>
         )}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
