@@ -1,4 +1,4 @@
-import { PrismaClient } from '../node_modules/.prisma/client';
+import { PrismaClient } from '../../../node_modules/.prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -432,6 +432,80 @@ async function main() {
   console.log(`✅ Created ${6} services`);
 
   // ============================================
+  // Create Equipment (for IoT/ML features)
+  // ============================================
+  console.log('🔧 Creating equipment...');
+
+  await prisma.equipment.create({
+    data: {
+      merchantId: merchant1.id,
+      name: 'Industrial Washer #1',
+      type: 'WASHER',
+      manufacturer: 'Electrolux',
+      model: 'WH6-33',
+      serialNumber: 'ELX-WASH-001',
+      purchaseDate: new Date('2020-03-15'),
+      lastMaintenanceDate: new Date('2024-09-01'),
+      nextMaintenanceDate: new Date('2024-12-01'),
+      status: 'OPERATIONAL',
+      isIotEnabled: true,
+      iotDeviceId: 'ESP32-WASH-001',
+    },
+  });
+
+  await prisma.equipment.create({
+    data: {
+      merchantId: merchant1.id,
+      name: 'Commercial Dryer #1',
+      type: 'DRYER',
+      manufacturer: 'Speed Queen',
+      model: 'SDESXRGS173TW01',
+      serialNumber: 'SQ-DRY-001',
+      purchaseDate: new Date('2020-03-15'),
+      lastMaintenanceDate: new Date('2024-08-15'),
+      nextMaintenanceDate: new Date('2024-11-15'),
+      status: 'OPERATIONAL',
+      isIotEnabled: true,
+      iotDeviceId: 'ESP32-DRY-001',
+    },
+  });
+
+  await prisma.equipment.create({
+    data: {
+      merchantId: merchant1.id,
+      name: 'Pressing Machine #1',
+      type: 'PRESSER',
+      manufacturer: 'Sankosha',
+      model: 'DF-6100',
+      serialNumber: 'SNK-PRESS-001',
+      purchaseDate: new Date('2021-06-10'),
+      lastMaintenanceDate: new Date('2024-07-20'),
+      nextMaintenanceDate: new Date('2024-10-20'),
+      status: 'OPERATIONAL',
+      isIotEnabled: true,
+      iotDeviceId: 'ESP32-PRESS-001',
+    },
+  });
+
+  await prisma.equipment.create({
+    data: {
+      merchantId: merchant2.id,
+      name: 'Industrial Washer #2',
+      type: 'WASHER',
+      manufacturer: 'Maytag',
+      model: 'MHN33PDAWW',
+      serialNumber: 'MAY-WASH-002',
+      purchaseDate: new Date('2019-11-20'),
+      lastMaintenanceDate: new Date('2024-08-01'),
+      nextMaintenanceDate: new Date('2024-11-01'),
+      status: 'OPERATIONAL',
+      isIotEnabled: false,
+    },
+  });
+
+  console.log(`✅ Created ${4} equipment items`);
+
+  // ============================================
   // Create Sample Order
   // ============================================
   console.log('📦 Creating sample order...');
@@ -511,6 +585,7 @@ async function main() {
   console.log(`   - ${2} Merchants`);
   console.log(`   - ${2} Merchant Locations`);
   console.log(`   - ${6} Services`);
+  console.log(`   - ${4} Equipment Items (3 IoT-enabled)`);
   console.log(`   - ${1} Sample Order (with items and status history)`);
   console.log('\n🔐 Test Credentials:');
   console.log('   Customer 1: john.doe@example.com / password123');
