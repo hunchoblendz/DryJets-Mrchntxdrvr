@@ -553,12 +553,18 @@ export class OrdersService {
       [OrderStatus.PICKED_UP]: [OrderStatus.IN_TRANSIT_TO_MERCHANT],
       [OrderStatus.IN_TRANSIT_TO_MERCHANT]: [OrderStatus.RECEIVED_BY_MERCHANT],
       [OrderStatus.RECEIVED_BY_MERCHANT]: [OrderStatus.IN_PROCESS],
-      [OrderStatus.IN_PROCESS]: [OrderStatus.READY_FOR_DELIVERY],
+      [OrderStatus.IN_PROCESS]: [
+        OrderStatus.READY_FOR_DELIVERY,
+        OrderStatus.READY_FOR_CUSTOMER_PICKUP,
+      ],
       [OrderStatus.READY_FOR_DELIVERY]: [OrderStatus.OUT_FOR_DELIVERY],
       [OrderStatus.OUT_FOR_DELIVERY]: [OrderStatus.DELIVERED],
       [OrderStatus.DELIVERED]: [OrderStatus.REFUNDED],
       [OrderStatus.CANCELLED]: [],
       [OrderStatus.REFUNDED]: [],
+      [OrderStatus.AWAITING_CUSTOMER_DROPOFF]: [OrderStatus.RECEIVED_BY_MERCHANT, OrderStatus.CANCELLED],
+      [OrderStatus.READY_FOR_CUSTOMER_PICKUP]: [OrderStatus.PICKED_UP_BY_CUSTOMER],
+      [OrderStatus.PICKED_UP_BY_CUSTOMER]: [OrderStatus.REFUNDED],
     };
 
     const allowedTransitions = validTransitions[currentStatus] || [];
