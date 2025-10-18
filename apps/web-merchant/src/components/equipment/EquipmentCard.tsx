@@ -1,18 +1,22 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { HealthScoreBadge } from './HealthScoreBadge';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { EquipmentIcon } from './EquipmentIcon';
+import { HealthRing } from './HealthRing';
 import {
   Activity,
   AlertTriangle,
   Calendar,
-  Circle,
-  Power,
   Wifi,
   WifiOff,
+  Wrench,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 interface Equipment {
   id: string;
@@ -36,44 +40,49 @@ interface EquipmentCardProps {
 }
 
 export function EquipmentCard({ equipment, onClick }: EquipmentCardProps) {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'OPERATIONAL':
-        return 'bg-green-500';
-      case 'MAINTENANCE_REQUIRED':
-        return 'bg-orange-500';
-      case 'OUT_OF_SERVICE':
-        return 'bg-red-500';
-      default:
-        return 'bg-gray-500';
-    }
-  };
-
-  const getEquipmentIcon = (type: string) => {
-    // You can replace these with actual equipment icons
-    return '🔧';
-  };
+  const isMaintenanceDue = equipment.status === 'MAINTENANCE_REQUIRED';
 
   return (
-    <Card
-      className="hover:shadow-lg transition-shadow cursor-pointer"
-      onClick={onClick}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      whileHover={{ scale: 1.03 }}
+      whileTap={{ scale: 0.98 }}
     >
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="text-3xl">{getEquipmentIcon(equipment.type)}</div>
-            <div>
-              <CardTitle className="text-lg">{equipment.name}</CardTitle>
-              <p className="text-sm text-muted-foreground">{equipment.type}</p>
+      <Card
+        className={cn(
+          'cursor-pointer transition-all duration-fast shadow-sm hover:shadow-lift border-2',
+          equipment.isRunning && equipment.isIotEnabled && 'border-primary-200 dark:border-primary-800'
+        )}
+        onClick={onClick}
+      >
+        <CardHeader className="pb-4">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center space-x-3">
+              <EquipmentIcon type={equipment.type} size="md" />
+              <div>
+                <h3 className="font-heading font-semibold text-lg">{equipment.name}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {equipment.type.replace(/_/g, ' ')}
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="flex flex-col items-end space-y-2">
+
+            {/* IoT Badge */}
             {equipment.isIotEnabled ? (
-              <Badge variant="default" className="bg-blue-600">
-                <Wifi className="h-3 w-3 mr-1" />
-                IoT
-              </Badge>
+              <div className="relative">
+                <Badge className="bg-brand-gradient text-white border-0">
+                  <Wifi className="h-3 w-3 mr-1" />
+                  IoT
+                </Badge>
+                {equipment.isRunning && (
+                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-eco-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-eco-500"></span>
+                  </span>
+                )}
+              </div>
             ) : (
               <Badge variant="secondary">
                 <WifiOff className="h-3 w-3 mr-1" />
@@ -81,92 +90,103 @@ export function EquipmentCard({ equipment, onClick }: EquipmentCardProps) {
               </Badge>
             )}
           </div>
-        </div>
-      </CardHeader>
+        </CardHeader>
 
-      <CardContent>
-        <div className="space-y-4">
-          {/* Status */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Status</span>
-            <div className="flex items-center space-x-2">
-              <Circle
-                className={`h-2 w-2 ${getStatusColor(equipment.status)} rounded-full`}
-                fill="currentColor"
-              />
-              <span className="text-sm font-medium">
-                {equipment.status.replace(/_/g, ' ')}
-              </span>
-            </div>
-          </div>
-
-          {/* Running Status */}
-          {equipment.isIotEnabled && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Current State</span>
-              <div className="flex items-center space-x-2">
-                <Power
-                  className={`h-4 w-4 ${equipment.isRunning ? 'text-green-600' : 'text-gray-400'}`}
-                />
-                <span className="text-sm font-medium">
-                  {equipment.isRunning ? 'Running' : 'Idle'}
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Health Score */}
+        <CardContent className="space-y-6">
+          {/* Health Ring - Center Feature */}
           {equipment.isIotEnabled && equipment.healthScore !== undefined && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Health</span>
-              <HealthScoreBadge
+            <div className="flex justify-center py-2">
+              <HealthRing
                 score={equipment.healthScore}
                 status={equipment.healthStatus}
+                size={110}
               />
             </div>
           )}
 
-          {/* Efficiency Score */}
-          {equipment.isIotEnabled && equipment.efficiencyScore !== undefined && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Efficiency</span>
-              <span className="text-sm font-medium">{equipment.efficiencyScore}%</span>
-            </div>
-          )}
-
-          {/* Open Alerts */}
-          {equipment.isIotEnabled && equipment.openAlerts > 0 && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Alerts</span>
-              <Badge variant="destructive" className="flex items-center space-x-1">
-                <AlertTriangle className="h-3 w-3" />
-                <span>{equipment.openAlerts}</span>
-              </Badge>
-            </div>
-          )}
-
-          {/* Last Maintenance */}
-          {equipment.lastMaintenanceDate && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Last Service</span>
-              <div className="flex items-center space-x-1 text-sm">
-                <Calendar className="h-3 w-3 text-muted-foreground" />
-                <span>
-                  {formatDistanceToNow(new Date(equipment.lastMaintenanceDate), {
-                    addSuffix: true,
-                  })}
-                </span>
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Efficiency */}
+            {equipment.isIotEnabled && equipment.efficiencyScore !== undefined && (
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Efficiency</span>
+                  <span className="text-sm font-semibold">{equipment.efficiencyScore}%</span>
+                </div>
+                <Progress value={equipment.efficiencyScore} className="h-2" />
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Last Telemetry */}
+            {/* Alerts */}
+            {equipment.isIotEnabled && (
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Alerts</span>
+                  {equipment.openAlerts > 0 ? (
+                    <motion.div
+                      initial={{ scale: 1 }}
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{ duration: 0.3, repeat: equipment.openAlerts > 3 ? Infinity : 0, repeatDelay: 2 }}
+                    >
+                      <Badge variant="destructive" className="h-5 px-2">
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        {equipment.openAlerts}
+                      </Badge>
+                    </motion.div>
+                  ) : (
+                    <span className="text-sm font-medium text-eco-600">None</span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Last Service */}
+            {equipment.lastMaintenanceDate && (
+              <div className="space-y-1 col-span-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    Last Service
+                  </span>
+                  <span className="text-xs font-medium">
+                    {formatDistanceToNow(new Date(equipment.lastMaintenanceDate), {
+                      addSuffix: true,
+                    })}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Running Status */}
+            {equipment.isIotEnabled && (
+              <div className="col-span-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Status</span>
+                  <div className="flex items-center gap-2">
+                    {equipment.isRunning ? (
+                      <>
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-eco-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-eco-500"></span>
+                        </span>
+                        <span className="text-sm font-medium text-eco-600">Running</span>
+                      </>
+                    ) : (
+                      <span className="text-sm font-medium text-muted-foreground">Idle</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Last Telemetry Update */}
           {equipment.isIotEnabled && equipment.lastTelemetryAt && (
             <div className="pt-3 border-t">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">Last Update</span>
-                <div className="flex items-center space-x-1">
-                  <Activity className="h-3 w-3 text-green-600 animate-pulse" />
+                <div className="flex items-center gap-1">
+                  <Activity className="h-3 w-3 text-eco-500 animate-pulse" />
                   <span className="text-xs text-muted-foreground">
                     {formatDistanceToNow(new Date(equipment.lastTelemetryAt), {
                       addSuffix: true,
@@ -176,8 +196,36 @@ export function EquipmentCard({ equipment, onClick }: EquipmentCardProps) {
               </div>
             </div>
           )}
-        </div>
-      </CardContent>
-    </Card>
+
+          {/* Action Buttons */}
+          <div className="flex gap-2 pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClick?.();
+              }}
+            >
+              View Details
+            </Button>
+            {isMaintenanceDue && (
+              <Button
+                size="sm"
+                className="flex-1 bg-warning-gradient hover:opacity-90"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // TODO: Schedule service
+                }}
+              >
+                <Wrench className="h-3 w-3 mr-1" />
+                Schedule Service
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }

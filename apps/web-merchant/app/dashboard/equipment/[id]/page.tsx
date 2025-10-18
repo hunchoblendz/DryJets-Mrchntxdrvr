@@ -121,7 +121,7 @@ export default function EquipmentDetailPage() {
             <p className="text-muted-foreground mt-1">{equipment.type}</p>
           </div>
           <div className="flex gap-3">
-            <HealthScoreBadge score={equipment.healthScore} status={equipment.healthStatus} size="lg" />
+            <HealthScoreBadge score={equipment.healthScore} status={equipment.healthStatus as 'EXCELLENT' | 'GOOD' | 'FAIR' | 'POOR' | 'CRITICAL'} size="lg" />
             <Badge variant={equipment.telemetry.isRunning ? 'default' : 'secondary'}>
               {equipment.telemetry.isRunning ? 'Running' : 'Idle'}
             </Badge>

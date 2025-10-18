@@ -296,7 +296,7 @@ export default function OrderDetailPage() {
                       key={status}
                       onClick={() => {
                         if (confirm(`Update order status to ${getOrderStatusLabel(status)}?`)) {
-                          updateStatusMutation.mutate({ status, notes });
+                          updateStatusMutation.mutate({ status: status as OrderStatus, notes });
                         }
                       }}
                       disabled={updateStatusMutation.isPending}
