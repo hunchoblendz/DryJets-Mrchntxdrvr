@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "DryJets Customer",
+    "slug": "dryjets-customer",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.dryjets.customer",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "DryJets needs your location to find nearby cleaners and track deliveries.",
+        "NSCameraUsageDescription": "DryJets needs camera access to take photos of items.",
+        "NSPhotoLibraryUsageDescription": "DryJets needs access to your photos to upload item images."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.dryjets.customer",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-location",
+      "expo-image-picker"
+    ],
+    "scheme": "dryjets",
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "your-project-id"
+      }
+    }
+  }
+}

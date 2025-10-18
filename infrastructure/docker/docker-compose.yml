@@ -1,0 +1,104 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: dryjets-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: dryjets
+      POSTGRES_PASSWORD: dryjets_dev_password
+      POSTGRES_DB: dryjets
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - dryjets-network
+
+  # Redis for caching and sessions
+  redis:
+    image: redis:7-alpine
+    container_name: dryjets-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    networks:
+      - dryjets-network
+
+  # Elasticsearch for search functionality
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: dryjets-elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - '9200:9200'
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - dryjets-network
+
+  # Backend API (NestJS)
+  api:
+    build:
+      context: ../../
+      dockerfile: infrastructure/docker/Dockerfile.api
+    container_name: dryjets-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://dryjets:dryjets_dev_password@postgres:5432/dryjets
+      REDIS_URL: redis://redis:6379
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+    ports:
+      - '3000:3000'
+    depends_on:
+      - postgres
+      - redis
+      - elasticsearch
+    volumes:
+      - ../../apps/api:/app/apps/api
+      - ../../packages:/app/packages
+      - /app/node_modules
+    networks:
+      - dryjets-network
+    command: npm run dev --workspace=@dryjets/api
+
+  # Merchant Web Portal (Next.js)
+  web-merchant:
+    build:
+      context: ../../
+      dockerfile: infrastructure/docker/Dockerfile.web
+      args:
+        APP_NAME: web-merchant
+    container_name: dryjets-web-merchant
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+    ports:
+      - '3001:3001'
+    volumes:
+      - ../../apps/web-merchant:/app/apps/web-merchant
+      - ../../packages:/app/packages
+      - /app/node_modules
+    networks:
+      - dryjets-network
+    command: npm run dev --workspace=@dryjets/web-merchant
+
+volumes:
+  postgres_data:
+  redis_data:
+  elasticsearch_data:
+
+networks:
+  dryjets-network:
+    driver: bridge

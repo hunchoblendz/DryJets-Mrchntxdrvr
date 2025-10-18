@@ -1,0 +1,39 @@
+# Multi-stage Dockerfile for Next.js applications
+
+FROM node:20-alpine AS base
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+# Install dependencies
+FROM base AS deps
+COPY package*.json ./
+COPY turbo.json ./
+ARG APP_NAME
+COPY apps/${APP_NAME}/package.json ./apps/${APP_NAME}/
+RUN npm ci
+
+# Build the application
+FROM base AS builder
+ARG APP_NAME
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN npm run build --workspace=@dryjets/${APP_NAME}
+
+# Production image
+FROM base AS runner
+ARG APP_NAME
+ENV NODE_ENV=production
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+COPY --from=builder /app/apps/${APP_NAME}/.next ./apps/${APP_NAME}/.next
+COPY --from=builder /app/apps/${APP_NAME}/public ./apps/${APP_NAME}/public
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/${APP_NAME}/package.json ./apps/${APP_NAME}/
+
+USER nextjs
+
+EXPOSE 3001
+
+CMD ["npm", "run", "start", "--workspace=@dryjets/${APP_NAME}"]
