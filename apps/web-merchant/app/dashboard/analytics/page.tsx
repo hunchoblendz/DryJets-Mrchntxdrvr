@@ -1,10 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { StatCard } from '@/components/ui/stat-card';
+import { SkeletonCard, SkeletonChart } from '@/components/ui/skeleton';
+import { RecommendationCard } from '@/components/analytics/RecommendationCard';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { TrendingDown, TrendingUp, Zap, Droplets, DollarSign, Lightbulb } from 'lucide-react';
+import { TrendingUp, Zap, Droplets, DollarSign, Lightbulb, TrendingDown } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { staggerContainer, fadeInUp } from '@/lib/animations';
 
 interface ResourceData {
   date: string;
@@ -114,217 +118,254 @@ export default function AnalyticsPage() {
   };
 
   const totalSavings = recommendations.reduce((sum, rec) => sum + rec.potentialSavings.amount, 0);
-  const avgEnergy = resourceData.reduce((sum, d) => sum + d.energy, 0) / resourceData.length;
-  const avgWater = resourceData.reduce((sum, d) => sum + d.water, 0) / resourceData.length;
-  const avgCost = resourceData.reduce((sum, d) => sum + d.cost, 0) / resourceData.length;
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'HIGH': return 'bg-red-600 hover:bg-red-700';
-      case 'MEDIUM': return 'bg-yellow-600 hover:bg-yellow-700';
-      case 'LOW': return 'bg-blue-600 hover:bg-blue-700';
-      default: return 'bg-gray-600 hover:bg-gray-700';
-    }
-  };
+  const avgEnergy = resourceData.reduce((sum, d) => sum + d.energy, 0) / resourceData.length || 0;
+  const avgWater = resourceData.reduce((sum, d) => sum + d.water, 0) / resourceData.length || 0;
+  const avgCost = resourceData.reduce((sum, d) => sum + d.cost, 0) / resourceData.length || 0;
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-muted-foreground">Loading analytics...</p>
+      <div className="container mx-auto py-8">
+        <div className="mb-8">
+          <div className="h-10 w-80 bg-muted rounded mb-2 skeleton" />
+          <div className="h-5 w-96 bg-muted rounded skeleton" />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-24 bg-muted rounded-2xl skeleton" />
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {[...Array(2)].map((_, i) => (
+            <SkeletonChart key={i} />
+          ))}
+        </div>
+
+        <SkeletonChart className="mb-6" />
+
+        <div className="space-y-4">
+          {[...Array(3)].map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Resource Analytics</h1>
-        <p className="text-muted-foreground mt-1">
-          Monitor energy, water usage, and cost optimization opportunities
+    <motion.div
+      className="container mx-auto py-8"
+      initial="hidden"
+      animate="visible"
+      variants={staggerContainer}
+    >
+      <motion.div variants={fadeInUp} className="mb-8">
+        <h1 className="text-4xl font-heading font-bold bg-brand-gradient bg-clip-text text-transparent">
+          Resource Analytics & Optimization
+        </h1>
+        <p className="text-muted-foreground mt-2 text-lg">
+          Monitor energy, water usage, and discover cost-saving opportunities
         </p>
-      </div>
+      </motion.div>
 
-      {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Potential Monthly Savings
-            </CardDescription>
-            <CardTitle className="text-3xl text-green-600">${totalSavings}</CardTitle>
-          </CardHeader>
-        </Card>
+      <motion.div
+        variants={fadeInUp}
+        className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8"
+      >
+        <StatCard
+          title="Potential Monthly Savings"
+          value={totalSavings}
+          prefix="$"
+          icon={DollarSign}
+          variant="success"
+        />
+        <StatCard
+          title="Avg Daily Energy"
+          value={parseFloat(avgEnergy.toFixed(1))}
+          suffix=" kWh"
+          icon={Zap}
+          variant="info"
+          decimals={1}
+        />
+        <StatCard
+          title="Avg Daily Water"
+          value={Math.round(avgWater)}
+          suffix=" L"
+          icon={Droplets}
+          variant="info"
+        />
+        <StatCard
+          title="Avg Daily Cost"
+          value={parseFloat(avgCost.toFixed(2))}
+          prefix="$"
+          icon={TrendingDown}
+          variant="default"
+          decimals={2}
+        />
+      </motion.div>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription className="flex items-center gap-2">
-              <Zap className="h-4 w-4" />
-              Avg Daily Energy
-            </CardDescription>
-            <CardTitle className="text-2xl">{avgEnergy.toFixed(1)} kWh</CardTitle>
-          </CardHeader>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription className="flex items-center gap-2">
-              <Droplets className="h-4 w-4" />
-              Avg Daily Water
-            </CardDescription>
-            <CardTitle className="text-2xl">{avgWater.toFixed(0)} L</CardTitle>
-          </CardHeader>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Avg Daily Cost</CardDescription>
-            <CardTitle className="text-2xl">${avgCost.toFixed(2)}</CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
-
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <Card>
+      <motion.div variants={fadeInUp} className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <Card className="shadow-lift-hover border-primary-100 dark:border-primary-900">
           <CardHeader>
-            <CardTitle>Energy Consumption</CardTitle>
-            <CardDescription>Daily kWh usage - Last 30 days</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5 text-primary-600" />
+              Energy Consumption
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">Daily kWh usage - Last 30 days</p>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={resourceData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="energy" fill="#2563eb" name="Energy (kWh)" />
+                <defs>
+                  <linearGradient id="energyGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#0A78FF" stopOpacity={0.9} />
+                    <stop offset="100%" stopColor="#0A78FF" stopOpacity={0.3} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
+                <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} />
+                <YAxis stroke="#9ca3af" fontSize={12} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                  }}
+                />
+                <Bar dataKey="energy" fill="url(#energyGradient)" name="Energy (kWh)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="shadow-lift-hover border-eco-100 dark:border-eco-900">
           <CardHeader>
-            <CardTitle>Water Usage</CardTitle>
-            <CardDescription>Daily liters - Last 30 days</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <Droplets className="h-5 w-5 text-eco-600" />
+              Water Usage
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">Daily liters - Last 30 days</p>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={resourceData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="water" fill="#0891b2" name="Water (L)" />
+                <defs>
+                  <linearGradient id="waterGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#00B7A5" stopOpacity={0.9} />
+                    <stop offset="100%" stopColor="#00B7A5" stopOpacity={0.3} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
+                <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} />
+                <YAxis stroke="#9ca3af" fontSize={12} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                  }}
+                />
+                <Bar dataKey="water" fill="url(#waterGradient)" name="Water (L)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
-      </div>
+      </motion.div>
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Daily Operating Costs</CardTitle>
-          <CardDescription>Combined energy and water costs - Last 30 days</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={resourceData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="cost" stroke="#16a34a" name="Cost ($)" strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+      <motion.div variants={fadeInUp}>
+        <Card className="mb-8 shadow-lift-hover">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-eco-600" />
+              Daily Operating Costs
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">Combined energy and water costs - Last 30 days</p>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={resourceData}>
+                <defs>
+                  <linearGradient id="costGradient" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#0A78FF" />
+                    <stop offset="100%" stopColor="#00B7A5" />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
+                <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} />
+                <YAxis stroke="#9ca3af" fontSize={12} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                  }}
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="cost"
+                  stroke="url(#costGradient)"
+                  name="Cost ($)"
+                  strokeWidth={3}
+                  dot={{ fill: '#0A78FF', r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </motion.div>
 
-      {/* Optimization Recommendations */}
-      <div>
-        <div className="flex items-center gap-2 mb-4">
-          <Lightbulb className="h-6 w-6 text-yellow-600" />
-          <h2 className="text-2xl font-bold">Optimization Recommendations</h2>
+      <motion.div variants={fadeInUp}>
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 rounded-lg bg-gradient-to-br from-warning-100 to-warning-200 dark:from-warning-900/30 dark:to-warning-800/20">
+            <Lightbulb className="h-6 w-6 text-warning-600 dark:text-warning-500" />
+          </div>
+          <h2 className="text-3xl font-heading font-bold">Optimization Recommendations</h2>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 mb-8">
           {recommendations.map((rec, index) => (
-            <Card key={index} className="overflow-hidden">
-              <div className="flex">
-                <div className={`w-2 ${getPriorityColor(rec.priority)}`} />
-                <div className="flex-1 p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="font-semibold text-lg mb-1">{rec.title}</h3>
-                      <p className="text-sm text-muted-foreground">{rec.description}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Badge className={`${getPriorityColor(rec.priority)} text-white`}>
-                        {rec.priority}
-                      </Badge>
-                      <Badge variant="outline">{rec.type}</Badge>
-                    </div>
-                  </div>
-
-                  <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <TrendingDown className="h-5 w-5 text-green-600" />
-                      <span className="font-semibold text-green-900 dark:text-green-100">
-                        Potential Savings: ${rec.potentialSavings.amount}/{rec.potentialSavings.period}
-                      </span>
-                    </div>
-                    <p className="text-sm text-green-700 dark:text-green-300">
-                      ${(rec.potentialSavings.amount * 12).toLocaleString()}/year estimated savings
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="font-medium mb-2">Action Items:</p>
-                    <ul className="space-y-1">
-                      {rec.actionItems.map((item, i) => (
-                        <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
-                          <span className="text-blue-600 mt-1">•</span>
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </Card>
+            <RecommendationCard key={index} recommendation={rec} />
           ))}
         </div>
 
-        <Card className="mt-6 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+        <Card className="bg-gradient-to-br from-primary-50 to-eco-50 dark:from-primary-950/30 dark:to-eco-950/20 border-primary-200 dark:border-primary-800 shadow-lift">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-blue-600" />
+            <CardTitle className="flex items-center gap-2 text-2xl">
+              <div className="p-2 rounded-full bg-eco-gradient">
+                <TrendingUp className="h-5 w-5 text-white" />
+              </div>
               Annual ROI Projection
             </CardTitle>
-            <CardDescription>Implementing all recommendations</CardDescription>
+            <p className="text-sm text-muted-foreground mt-2">
+              By implementing all recommendations above
+            </p>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Total Annual Savings</p>
-                <p className="text-3xl font-bold text-blue-600">${(totalSavings * 12).toLocaleString()}</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="text-center md:text-left">
+                <p className="text-sm font-medium text-muted-foreground mb-2">Total Annual Savings</p>
+                <p className="text-4xl font-heading font-bold bg-eco-gradient bg-clip-text text-transparent">
+                  ${(totalSavings * 12).toLocaleString()}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">per year</p>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Implementation Cost</p>
-                <p className="text-3xl font-bold">$0 - $500</p>
-                <p className="text-xs text-muted-foreground mt-1">Mostly operational changes</p>
+              <div className="text-center md:text-left">
+                <p className="text-sm font-medium text-muted-foreground mb-2">Implementation Cost</p>
+                <p className="text-4xl font-heading font-bold text-foreground">$0 - $500</p>
+                <p className="text-xs text-eco-600 dark:text-eco-500 mt-1 font-medium">Mostly operational changes</p>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">ROI</p>
-                <p className="text-3xl font-bold text-green-600">300-500%</p>
-                <p className="text-xs text-muted-foreground mt-1">First year return</p>
+              <div className="text-center md:text-left">
+                <p className="text-sm font-medium text-muted-foreground mb-2">First Year ROI</p>
+                <p className="text-4xl font-heading font-bold text-eco-600 dark:text-eco-500">300-500%</p>
+                <p className="text-xs text-muted-foreground mt-1">Return on investment</p>
               </div>
             </div>
           </CardContent>
         </Card>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
