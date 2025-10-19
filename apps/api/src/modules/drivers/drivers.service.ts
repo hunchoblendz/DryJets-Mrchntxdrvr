@@ -471,7 +471,6 @@ export class DriversService {
       where: { id: driverId },
       data: {
         status: newStatus,
-        lastActiveAt: new Date(),
       },
       include: {
         user: {
@@ -506,7 +505,7 @@ export class DriversService {
     }
 
     // Check if order is in correct state for assignment
-    const validStatuses = ['PENDING_ASSIGNMENT', 'CONFIRMED', 'READY_FOR_PICKUP'];
+    const validStatuses = ['PAYMENT_CONFIRMED', 'READY_FOR_DELIVERY', 'DRIVER_ASSIGNED'];
     if (!validStatuses.includes(order.status)) {
       throw new BadRequestException(
         `Order cannot be accepted in ${order.status} status`,
@@ -524,7 +523,7 @@ export class DriversService {
       data: {
         pickupDriverId: driverId,
         deliveryDriverId: driverId, // In simple model, same driver does pickup & delivery
-        status: 'ASSIGNED_TO_DRIVER',
+        status: 'DRIVER_ASSIGNED',
       },
       include: {
         customer: true,
@@ -539,7 +538,7 @@ export class DriversService {
     await this.prisma.orderStatusHistory.create({
       data: {
         orderId,
-        status: 'ASSIGNED_TO_DRIVER',
+        status: 'DRIVER_ASSIGNED',
         notes: notes || `Order accepted by driver ${driver.firstName} ${driver.lastName}`,
       },
     });
@@ -570,7 +569,7 @@ export class DriversService {
     }
 
     // Verify order status
-    if (order.status !== 'ASSIGNED_TO_DRIVER' && order.status !== 'READY_FOR_PICKUP') {
+    if (order.status !== 'DRIVER_ASSIGNED' && order.status !== 'READY_FOR_DELIVERY') {
       throw new BadRequestException(
         `Order cannot be picked up in ${order.status} status`,
       );
@@ -662,7 +661,6 @@ export class DriversService {
       where: { id: driverId },
       data: {
         totalTrips: { increment: 1 },
-        lastActiveAt: new Date(),
       },
     });
 
@@ -710,9 +708,8 @@ export class DriversService {
         driverId,
         orderId,
         amount: driverEarning,
-        type: 'DELIVERY',
-        status: 'PENDING',
-        description: `Delivery for order ${order.orderNumber}`,
+        platformFee,
+        netEarning: driverEarning,
       },
     });
 
@@ -734,7 +731,7 @@ export class DriversService {
   async getDriverEarnings(
     driverId: string,
     params?: {
-      status?: string;
+      paidOut?: boolean;
       startDate?: Date;
       endDate?: Date;
       page?: number;
@@ -743,13 +740,13 @@ export class DriversService {
   ) {
     await this.findDriverById(driverId);
 
-    const { status, startDate, endDate, page = 1, limit = 50 } = params || {};
+    const { paidOut, startDate, endDate, page = 1, limit = 50 } = params || {};
     const skip = (page - 1) * limit;
 
     const where: any = { driverId };
 
-    if (status) {
-      where.status = status;
+    if (paidOut !== undefined) {
+      where.paidOut = paidOut;
     }
 
     if (startDate || endDate) {
@@ -763,19 +760,11 @@ export class DriversService {
         where,
         skip,
         take: limit,
-        include: {
-          order: {
-            select: {
-              orderNumber: true,
-              status: true,
-            },
-          },
-        },
         orderBy: { createdAt: 'desc' },
       }),
       this.prisma.driverEarning.count({ where }),
       this.prisma.driverEarning.groupBy({
-        by: ['status'],
+        by: ['paidOut'],
         where: { driverId },
         _sum: { amount: true },
         _count: true,
@@ -783,10 +772,10 @@ export class DriversService {
     ]);
 
     const totalEarnings =
-      summary.find((s) => s.status === 'PAID')?._sum.amount || 0;
+      summary.find((s) => s.paidOut === true)?._sum.amount || 0;
     const pendingEarnings =
-      summary.find((s) => s.status === 'PENDING')?._sum.amount || 0;
-    const totalTrips = summary.reduce((sum, s) => sum + s._count, 0);
+      summary.find((s) => s.paidOut === false)?._sum.amount || 0;
+    const totalTrips = summary.reduce((sum, s) => sum + (s._count as number), 0);
 
     return {
       data: earnings,
@@ -908,7 +897,7 @@ export class DriversService {
       data: {
         pickupDriverId: bestDriver.id,
         deliveryDriverId: bestDriver.id,
-        status: 'ASSIGNED_TO_DRIVER',
+        status: 'DRIVER_ASSIGNED',
       },
       include: {
         customer: true,
@@ -923,7 +912,7 @@ export class DriversService {
     await this.prisma.orderStatusHistory.create({
       data: {
         orderId,
-        status: 'ASSIGNED_TO_DRIVER',
+        status: 'DRIVER_ASSIGNED',
         notes: `Auto-assigned to driver ${bestDriver.firstName} ${bestDriver.lastName} (${scoredDrivers[0].distance.toFixed(1)}km away)`,
       },
     });
@@ -940,7 +929,6 @@ export class DriversService {
     this.eventsGateway.emitDriverAssigned(updatedOrder, {
       id: bestDriver.id,
       name: `${bestDriver.firstName} ${bestDriver.lastName}`,
-      phone: bestDriver.phone,
       rating: bestDriver.rating,
       vehicleType: bestDriver.vehicleType,
     });
@@ -1012,7 +1000,7 @@ export class DriversService {
       where: {
         pickupDriverId: null,
         status: {
-          in: ['CONFIRMED', 'READY_FOR_PICKUP', 'PENDING_ASSIGNMENT'],
+          in: ['PAYMENT_CONFIRMED', 'READY_FOR_DELIVERY'],
         },
       },
       include: {

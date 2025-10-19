@@ -1,7 +1,8 @@
 import { Inter, Poppins } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
+import { Providers } from './providers';
 import { Toaster } from '@/components/ui/toaster';
-import '@/app/globals.css';
+import '../src/app/globals.css';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -17,8 +18,8 @@ const poppins = Poppins({
 });
 
 export const metadata = {
-  title: 'DryJets - IoT Equipment Management',
-  description: 'Smart equipment monitoring and management for dry cleaning businesses',
+  title: 'DryJets - Merchant Portal',
+  description: 'Smart order and equipment management for dry cleaning businesses',
 };
 
 export default function RootLayout({
@@ -30,7 +31,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${poppins.variable}`}>
         <ThemeProvider defaultTheme="light" storageKey="dryjets-ui-theme">
-          {children}
+          <Providers>
+            {children}
+          </Providers>
           <Toaster />
         </ThemeProvider>
       </body>

@@ -201,10 +201,8 @@ export class HealthScoringService {
     }
 
     // Cycle time efficiency (weight: 20%)
-    if (telemetry.cycleStartedAt && telemetry.cycleEstimatedEnd) {
-      // Could be implemented with historical data
-      // For now, placeholder
-    }
+    // Could be implemented with historical data tracking
+    // For now, not implemented
 
     return Math.max(0, Math.min(100, efficiencyScore));
   }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { StatCard } from '@/components/ui/stat-card';
@@ -9,6 +9,7 @@ import { EquipmentCard } from '@/components/equipment/EquipmentCard';
 import { Plus, Activity, AlertTriangle, Zap, TrendingUp } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { staggerContainer, fadeInUp } from '@/lib/animations';
+import { useEquipment } from '@/lib/hooks/useIoT';
 
 interface Equipment {
   id: string;
@@ -28,108 +29,13 @@ interface Equipment {
 
 export default function EquipmentPage() {
   const router = useRouter();
-  const [equipment, setEquipment] = useState<Equipment[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'iot' | 'no-iot'>('all');
 
-  useEffect(() => {
-    fetchEquipment();
-  }, []);
+  // TODO: Replace with actual merchant ID from auth context
+  const merchantId = 'merchant-1';
 
-  const fetchEquipment = async () => {
-    try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      // Mock data
-      setEquipment([
-        {
-          id: '1',
-          name: 'Washer #1',
-          type: 'WASHER',
-          status: 'OPERATIONAL',
-          isIotEnabled: true,
-          lastTelemetryAt: new Date().toISOString(),
-          healthScore: 87,
-          healthStatus: 'GOOD',
-          efficiencyScore: 92,
-          isRunning: true,
-          openAlerts: 0,
-          lastMaintenanceDate: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
-          nextMaintenanceDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: '2',
-          name: 'Dryer #1',
-          type: 'DRYER',
-          status: 'OPERATIONAL',
-          isIotEnabled: true,
-          lastTelemetryAt: new Date().toISOString(),
-          healthScore: 74,
-          healthStatus: 'FAIR',
-          efficiencyScore: 68,
-          isRunning: false,
-          openAlerts: 2,
-          lastMaintenanceDate: new Date(Date.now() - 95 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: '3',
-          name: 'Washer #2',
-          type: 'WASHER',
-          status: 'MAINTENANCE_REQUIRED',
-          isIotEnabled: true,
-          lastTelemetryAt: new Date().toISOString(),
-          healthScore: 45,
-          healthStatus: 'POOR',
-          efficiencyScore: 52,
-          isRunning: false,
-          openAlerts: 3,
-          lastMaintenanceDate: new Date(Date.now() - 130 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: '4',
-          name: 'Presser #1',
-          type: 'PRESSER',
-          status: 'OPERATIONAL',
-          isIotEnabled: false,
-          isRunning: false,
-          openAlerts: 0,
-        },
-        {
-          id: '5',
-          name: 'Steam Boiler #1',
-          type: 'STEAM_BOILER',
-          status: 'OPERATIONAL',
-          isIotEnabled: true,
-          lastTelemetryAt: new Date().toISOString(),
-          healthScore: 91,
-          healthStatus: 'EXCELLENT',
-          efficiencyScore: 88,
-          isRunning: true,
-          openAlerts: 0,
-          lastMaintenanceDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: '6',
-          name: 'Dryer #2',
-          type: 'DRYER',
-          status: 'OPERATIONAL',
-          isIotEnabled: true,
-          lastTelemetryAt: new Date().toISOString(),
-          healthScore: 82,
-          healthStatus: 'GOOD',
-          efficiencyScore: 79,
-          isRunning: true,
-          openAlerts: 1,
-          lastMaintenanceDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-      ]);
-    } catch (error) {
-      console.error('Failed to fetch equipment:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Fetch equipment data using React Query
+  const { data: equipment = [], isLoading: loading, error } = useEquipment(merchantId);
 
   const filteredEquipment = equipment.filter((eq) => {
     if (filter === 'iot') return eq.isIotEnabled;

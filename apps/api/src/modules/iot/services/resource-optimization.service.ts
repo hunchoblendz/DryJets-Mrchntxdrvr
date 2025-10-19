@@ -9,7 +9,7 @@ interface ResourceUsageData {
   timestamp: Date;
 }
 
-interface OptimizationRecommendation {
+export interface OptimizationRecommendation {
   type: 'ENERGY' | 'WATER' | 'SCHEDULING' | 'MAINTENANCE';
   priority: 'LOW' | 'MEDIUM' | 'HIGH';
   title: string;

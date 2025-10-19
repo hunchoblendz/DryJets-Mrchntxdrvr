@@ -30,16 +30,28 @@ export default function DashboardLayout({
           {/* Navigation */}
           <nav className="hidden md:flex items-center gap-6">
             <Link
+              href="/dashboard"
+              className="text-sm font-medium transition-colors hover:text-primary"
+            >
+              Dashboard
+            </Link>
+            <Link
+              href="/dashboard/orders"
+              className="text-sm font-medium transition-colors hover:text-primary"
+            >
+              Orders
+            </Link>
+            <Link
+              href="/dashboard/services"
+              className="text-sm font-medium transition-colors hover:text-primary"
+            >
+              Services
+            </Link>
+            <Link
               href="/dashboard/equipment"
               className="text-sm font-medium transition-colors hover:text-primary"
             >
               Equipment
-            </Link>
-            <Link
-              href="/dashboard/alerts"
-              className="text-sm font-medium transition-colors hover:text-primary"
-            >
-              Alerts
             </Link>
             <Link
               href="/dashboard/analytics"

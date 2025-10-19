@@ -24,6 +24,8 @@ import {
   UpdateOrderStatusDto,
   OrderQueryDto,
   AssignDriverDto,
+  ConfirmDropoffDto,
+  ConfirmPickupDto,
 } from './dto/order.dto';
 
 @ApiTags('orders')
@@ -167,5 +169,49 @@ export class OrdersController {
   })
   async autoAssignDriver(@Param('id') orderId: string) {
     return this.driversService.assignDriverToOrder(orderId);
+  }
+
+  @Post(':id/confirm-dropoff')
+  @ApiOperation({ summary: 'Confirm customer drop-off (self-service)' })
+  @ApiParam({ name: 'id', description: 'Order ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Drop-off confirmed successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid order status for drop-off confirmation',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Order not found',
+  })
+  async confirmDropoff(
+    @Param('id') orderId: string,
+    @Body() confirmDto: ConfirmDropoffDto,
+  ) {
+    return this.ordersService.confirmDropoff(orderId, confirmDto);
+  }
+
+  @Post(':id/confirm-pickup')
+  @ApiOperation({ summary: 'Confirm customer pickup (self-service)' })
+  @ApiParam({ name: 'id', description: 'Order ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Pickup confirmed successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid order status for pickup confirmation',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Order not found',
+  })
+  async confirmPickup(
+    @Param('id') orderId: string,
+    @Body() confirmDto: ConfirmPickupDto,
+  ) {
+    return this.ordersService.confirmPickup(orderId, confirmDto);
   }
 }

@@ -99,11 +99,15 @@ export class OrdersService {
       };
     });
 
-    // Calculate fees and taxes
-    const serviceFee = subtotal * 0.1; // 10% service fee
-    const deliveryFee = 5.0; // Flat delivery fee
-    const taxAmount = (subtotal + serviceFee + deliveryFee) * 0.0875; // 8.75% tax
-    const totalAmount = subtotal + serviceFee + deliveryFee + taxAmount;
+    // Calculate dynamic pricing based on fulfillment mode
+    const fulfillmentMode = orderData.fulfillmentMode || 'FULL_SERVICE';
+    const pricingResult = this.calculateDynamicPricing(subtotal, fulfillmentMode);
+
+    const serviceFee = pricingResult.serviceFee;
+    const deliveryFee = pricingResult.deliveryFee;
+    const selfServiceDiscount = pricingResult.selfServiceDiscount;
+    const taxAmount = (subtotal + serviceFee + deliveryFee - selfServiceDiscount) * 0.0875; // 8.75% tax
+    const totalAmount = subtotal + serviceFee + deliveryFee + taxAmount - selfServiceDiscount;
 
     // Generate unique order number
     const orderNumber = await this.generateOrderNumber();
@@ -544,6 +548,7 @@ export class OrdersService {
       ],
       [OrderStatus.PAYMENT_CONFIRMED]: [
         OrderStatus.DRIVER_ASSIGNED,
+        OrderStatus.AWAITING_CUSTOMER_DROPOFF,
         OrderStatus.CANCELLED,
       ],
       [OrderStatus.DRIVER_ASSIGNED]: [
@@ -573,6 +578,172 @@ export class OrdersService {
       throw new BadRequestException(
         `Invalid status transition from ${currentStatus} to ${newStatus}`,
       );
+    }
+  }
+
+  /**
+   * Calculate dynamic pricing based on fulfillment mode
+   */
+  private calculateDynamicPricing(subtotal: number, fulfillmentMode: string) {
+    const serviceFee = subtotal * 0.1; // 10% service fee
+    const baseDeliveryFee = 5.0;
+    let deliveryFee = baseDeliveryFee;
+    let selfServiceDiscount = 0;
+
+    switch (fulfillmentMode) {
+      case 'CUSTOMER_DROPOFF_PICKUP':
+        // Full self-service: no delivery fee + 10% discount
+        deliveryFee = 0;
+        selfServiceDiscount = subtotal * 0.10;
+        break;
+
+      case 'CUSTOMER_DROPOFF_DRIVER_DELIVERY':
+      case 'DRIVER_PICKUP_CUSTOMER_PICKUP':
+        // Hybrid: 50% delivery fee
+        deliveryFee = baseDeliveryFee * 0.50;
+        break;
+
+      case 'FULL_SERVICE':
+      default:
+        // Full service: 100% delivery fee
+        deliveryFee = baseDeliveryFee;
+        break;
+    }
+
+    return {
+      serviceFee,
+      deliveryFee,
+      selfServiceDiscount,
+    };
+  }
+
+  /**
+   * Confirm customer drop-off (self-service)
+   */
+  async confirmDropoff(orderId: string, confirmDto: any) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Order with ID ${orderId} not found`);
+    }
+
+    // Validate order is in AWAITING_CUSTOMER_DROPOFF status
+    if (order.status !== 'AWAITING_CUSTOMER_DROPOFF') {
+      throw new BadRequestException(
+        `Cannot confirm drop-off for order in ${order.status} status`,
+      );
+    }
+
+    try {
+      const updatedOrder = await this.prisma.$transaction(async (prisma: any) => {
+        // Update order with dropoff confirmation
+        const updated = await prisma.order.update({
+          where: { id: orderId },
+          data: {
+            status: 'RECEIVED_BY_MERCHANT',
+            dropoffConfirmed: true,
+            dropoffConfirmedAt: new Date(),
+            customerDropoffTime: new Date(),
+            confirmationPhotoUrls: confirmDto.photoUrls || [],
+          },
+          include: {
+            customer: true,
+            merchant: true,
+            merchantLocation: true,
+            items: true,
+          },
+        });
+
+        // Create status history
+        await prisma.orderStatusHistory.create({
+          data: {
+            orderId,
+            status: 'RECEIVED_BY_MERCHANT',
+            notes: confirmDto.notes || 'Customer confirmed drop-off',
+            latitude: confirmDto.latitude,
+            longitude: confirmDto.longitude,
+          },
+        });
+
+        return updated;
+      });
+
+      // Emit real-time event to merchant
+      this.eventsGateway.emitOrderStatusChanged(updatedOrder, 'AWAITING_CUSTOMER_DROPOFF');
+
+      return updatedOrder;
+    } catch (error) {
+      console.error('Error confirming drop-off:', error);
+      throw new InternalServerErrorException('Failed to confirm drop-off');
+    }
+  }
+
+  /**
+   * Confirm customer pickup (self-service)
+   */
+  async confirmPickup(orderId: string, confirmDto: any) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Order with ID ${orderId} not found`);
+    }
+
+    // Validate order is in READY_FOR_CUSTOMER_PICKUP status
+    if (order.status !== 'READY_FOR_CUSTOMER_PICKUP') {
+      throw new BadRequestException(
+        `Cannot confirm pickup for order in ${order.status} status`,
+      );
+    }
+
+    try {
+      const updatedOrder = await this.prisma.$transaction(async (prisma: any) => {
+        // Update order with pickup confirmation
+        const updated = await prisma.order.update({
+          where: { id: orderId },
+          data: {
+            status: 'PICKED_UP_BY_CUSTOMER',
+            pickupConfirmed: true,
+            pickupConfirmedAt: new Date(),
+            customerPickupTime: new Date(),
+            actualDeliveryAt: new Date(),
+            confirmationPhotoUrls: [
+              ...(order.confirmationPhotoUrls || []),
+              ...(confirmDto.photoUrls || []),
+            ],
+          },
+          include: {
+            customer: true,
+            merchant: true,
+            merchantLocation: true,
+            items: true,
+          },
+        });
+
+        // Create status history
+        await prisma.orderStatusHistory.create({
+          data: {
+            orderId,
+            status: 'PICKED_UP_BY_CUSTOMER',
+            notes: confirmDto.notes || 'Customer confirmed pickup',
+            latitude: confirmDto.latitude,
+            longitude: confirmDto.longitude,
+          },
+        });
+
+        return updated;
+      });
+
+      // Emit real-time event
+      this.eventsGateway.emitOrderStatusChanged(updatedOrder, 'READY_FOR_CUSTOMER_PICKUP');
+
+      return updatedOrder;
+    } catch (error) {
+      console.error('Error confirming pickup:', error);
+      throw new InternalServerErrorException('Failed to confirm pickup');
     }
   }
 }

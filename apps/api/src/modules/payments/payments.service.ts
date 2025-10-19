@@ -33,7 +33,7 @@ export class PaymentsService {
       );
     }
     this.stripe = new Stripe(stripeSecretKey || '', {
-      apiVersion: '2024-11-20.acacia',
+      apiVersion: '2023-10-16',
     });
   }
 
@@ -72,25 +72,16 @@ export class PaymentsService {
     }
 
     try {
-      // Create Stripe customer if doesn't exist
-      let stripeCustomerId = order.customer.user.stripeCustomerId;
-      if (!stripeCustomerId) {
-        const stripeCustomer = await this.stripe.customers.create({
-          email: order.customer.user.email,
-          name: `${order.customer.firstName} ${order.customer.lastName}`,
-          metadata: {
-            userId: order.customer.userId,
-            customerId: order.customer.id,
-          },
-        });
-        stripeCustomerId = stripeCustomer.id;
-
-        // Update user with Stripe customer ID
-        await this.prisma.user.update({
-          where: { id: order.customer.userId },
-          data: { stripeCustomerId },
-        });
-      }
+      // Create Stripe customer (in production, you'd store this)
+      const stripeCustomer = await this.stripe.customers.create({
+        email: order.customer.user.email,
+        name: `${order.customer.firstName} ${order.customer.lastName}`,
+        metadata: {
+          userId: order.customer.userId,
+          customerId: order.customer.id,
+        },
+      });
+      const stripeCustomerId = stripeCustomer.id;
 
       // Create payment intent
       const paymentIntent = await this.stripe.paymentIntents.create({
@@ -110,19 +101,25 @@ export class PaymentsService {
         },
       });
 
+      // Calculate payment splits
+      const totalAmount = amount / 100; // Convert cents to dollars
+      const platformFee = totalAmount * 0.029 + 0.3; // Stripe fee
+      const merchantPayout = totalAmount - platformFee;
+
       // Create payment record in database
       const payment = await this.prisma.payment.create({
         data: {
           orderId: order.id,
-          amount: amount / 100, // Convert cents to dollars
+          customerId: order.customerId,
+          merchantId: order.merchantId,
+          amount: totalAmount,
           currency: currency.toUpperCase(),
-          method: 'CARD',
+          paymentMethod: 'CARD',
           status: 'PENDING',
-          stripePaymentIntentId: paymentIntent.id,
-          metadata: {
-            stripeCustomerId,
-            ...metadata,
-          } as any,
+          stripePaymentIntent: paymentIntent.id,
+          platformFee,
+          merchantPayout,
+          driverPayout: 0,
         },
       });
 
@@ -151,7 +148,7 @@ export class PaymentsService {
     try {
       // Find payment in database
       const payment = await this.prisma.payment.findFirst({
-        where: { stripePaymentIntentId: paymentIntentId },
+        where: { stripePaymentIntent: paymentIntentId },
         include: { order: true },
       });
 
@@ -169,7 +166,6 @@ export class PaymentsService {
           where: { id: payment.id },
           data: {
             status: 'SUCCEEDED',
-            processedAt: new Date(),
           },
         });
 
@@ -231,13 +227,13 @@ export class PaymentsService {
       throw new BadRequestException('Can only refund succeeded payments');
     }
 
-    if (!payment.stripePaymentIntentId) {
+    if (!payment.stripePaymentIntent) {
       throw new BadRequestException('No Stripe payment intent found');
     }
 
     try {
       const refund = await this.stripe.refunds.create({
-        payment_intent: payment.stripePaymentIntentId,
+        payment_intent: payment.stripePaymentIntent,
         amount: amount ? Math.round(amount) : undefined, // Amount in cents
         reason: reason as Stripe.RefundCreateParams.Reason,
       });
@@ -247,12 +243,8 @@ export class PaymentsService {
         where: { id: paymentId },
         data: {
           status: 'REFUNDED',
-          refundedAt: new Date(),
-          metadata: {
-            ...(payment.metadata as any),
-            stripeRefundId: refund.id,
-            refundReason: reason,
-          } as any,
+          refundAmount: amount ? amount / 100 : payment.amount,
+          refundReason: reason || 'Refund requested',
         },
       });
 
@@ -473,7 +465,7 @@ export class PaymentsService {
    */
   private async handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
     const payment = await this.prisma.payment.findFirst({
-      where: { stripePaymentIntentId: paymentIntent.id },
+      where: { stripePaymentIntent: paymentIntent.id },
     });
 
     if (payment && payment.status !== 'SUCCEEDED') {
@@ -481,7 +473,6 @@ export class PaymentsService {
         where: { id: payment.id },
         data: {
           status: 'SUCCEEDED',
-          processedAt: new Date(),
         },
       });
 
@@ -502,7 +493,7 @@ export class PaymentsService {
 
   private async handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
     const payment = await this.prisma.payment.findFirst({
-      where: { stripePaymentIntentId: paymentIntent.id },
+      where: { stripePaymentIntent: paymentIntent.id },
     });
 
     if (payment) {
@@ -516,7 +507,7 @@ export class PaymentsService {
   private async handleChargeRefunded(charge: Stripe.Charge) {
     if (typeof charge.payment_intent === 'string') {
       const payment = await this.prisma.payment.findFirst({
-        where: { stripePaymentIntentId: charge.payment_intent },
+        where: { stripePaymentIntent: charge.payment_intent },
       });
 
       if (payment && payment.status !== 'REFUNDED') {
@@ -524,7 +515,6 @@ export class PaymentsService {
           where: { id: payment.id },
           data: {
             status: 'REFUNDED',
-            refundedAt: new Date(),
           },
         });
 
