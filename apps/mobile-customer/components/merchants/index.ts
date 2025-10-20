@@ -1,0 +1,1 @@
+export { MerchantCard } from './MerchantCard';
