@@ -17,6 +17,8 @@ datasource db {
 
 enum UserRole {
   CUSTOMER
+  BUSINESS // Corporate client (hotels, restaurants, etc.)
+  ENTERPRISE // Multi-location enterprise organization
   DRIVER
   MERCHANT
   ADMIN
@@ -44,11 +46,13 @@ model User {
   lastLoginAt   DateTime?
 
   // Relationships
-  customer      Customer?
-  driver        Driver?
-  merchant      Merchant?
-  notifications Notification[]
-  sessions      UserSession[]
+  customer          Customer?
+  businessAccount   BusinessAccount?
+  enterpriseAccount EnterpriseAccount?
+  driver            Driver?
+  merchant          Merchant?
+  notifications     Notification[]
+  sessions          UserSession[]
 
   @@index([email])
   @@index([phone])
@@ -98,6 +102,261 @@ model Customer {
   referredBy        Referral?          @relation("Referred")
 
   @@index([userId])
+}
+
+// ============================================
+// BUSINESS ACCOUNT (Corporate Clients)
+// ============================================
+
+enum BusinessIndustry {
+  HOSPITALITY // Hotels, resorts
+  FOOD_SERVICE // Restaurants, cafes
+  HEALTHCARE // Hospitals, clinics
+  BEAUTY_WELLNESS // Salons, spas
+  FITNESS // Gyms, yoga studios
+  RETAIL // Clothing stores
+  CORPORATE // Office buildings
+  EDUCATION // Schools, universities
+  OTHER
+}
+
+enum BusinessSubscriptionTier {
+  BASIC
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+model BusinessAccount {
+  id                String                   @id @default(cuid())
+  userId            String                   @unique
+  companyName       String
+  taxId             String?
+  industry          BusinessIndustry?
+  billingEmail      String
+  billingPhone      String?
+  subscriptionTier  BusinessSubscriptionTier @default(BASIC)
+  monthlySpendLimit Float? // Optional spending limit
+  autoPayEnabled    Boolean                  @default(false)
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+
+  // Relationships
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  addresses       Address[]
+  orders          Order[]
+  invoices        Invoice[]
+  teamMembers     TeamMember[]
+  recurringOrders RecurringOrder[]
+
+  @@index([userId])
+  @@index([companyName])
+  @@index([subscriptionTier])
+}
+
+// Team members for business accounts (staff access)
+model TeamMember {
+  id              String    @id @default(cuid())
+  businessId      String
+  email           String
+  firstName       String
+  lastName        String
+  role            String // "ADMIN" | "MANAGER" | "MEMBER"
+  canPlaceOrders  Boolean   @default(true)
+  canViewInvoices Boolean   @default(false)
+  canManageTeam   Boolean   @default(false)
+  invitedAt       DateTime  @default(now())
+  acceptedAt      DateTime?
+  isActive        Boolean   @default(true)
+
+  businessAccount BusinessAccount @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, email])
+  @@index([businessId])
+  @@index([email])
+}
+
+// ============================================
+// ENTERPRISE ORGANIZATION (Multi-Tenant SaaS)
+// ============================================
+
+enum SubscriptionPlan {
+  STARTUP // 1-5 locations
+  GROWTH // 6-20 locations
+  ENTERPRISE // 21+ locations
+  CUSTOM // Custom pricing
+}
+
+model EnterpriseAccount {
+  id               String           @id @default(cuid())
+  userId           String           @unique
+  name             String
+  tenantId         String           @unique // Unique tenant identifier for isolation
+  subscriptionPlan SubscriptionPlan @default(STARTUP)
+  billingEmail     String
+  contractStart    DateTime?
+  contractEnd      DateTime?
+  apiKey           String           @unique
+  apiKeyEnabled    Boolean          @default(false)
+  monthlyQuota     Int? // Number of orders allowed per month
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  // Relationships
+  user         User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branches     Branch[]
+  subscription EnterpriseSubscription?
+  invoices     Invoice[]
+  apiLogs      ApiLog[]
+
+  @@index([userId])
+  @@index([tenantId])
+  @@index([subscriptionPlan])
+}
+
+// Branch locations for enterprise organizations
+model Branch {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  code           String? // Branch code (e.g., "NYC-01")
+  address        String
+  city           String
+  state          String?
+  postalCode     String?
+  country        String   @default("USA")
+  phone          String?
+  managerId      String? // Optional manager user ID
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization EnterpriseAccount @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  orders       Order[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+  @@index([managerId])
+}
+
+// Enterprise subscription details
+model EnterpriseSubscription {
+  id                   String   @id @default(cuid())
+  organizationId       String   @unique
+  stripeSubscriptionId String?  @unique
+  stripePriceId        String?
+  status               String   @default("ACTIVE") // "ACTIVE" | "PAUSED" | "CANCELED"
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  organization EnterpriseAccount @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+// API usage logs for enterprise clients
+model ApiLog {
+  id             String   @id @default(cuid())
+  organizationId String
+  endpoint       String
+  method         String
+  statusCode     Int
+  responseTime   Int // in milliseconds
+  ipAddress      String?
+  userAgent      String?
+  timestamp      DateTime @default(now())
+
+  organization EnterpriseAccount @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, timestamp])
+  @@index([timestamp])
+}
+
+// ============================================
+// INVOICES (for Business & Enterprise)
+// ============================================
+
+enum InvoiceStatus {
+  DRAFT
+  PENDING
+  PAID
+  OVERDUE
+  CANCELED
+}
+
+model Invoice {
+  id             String        @id @default(cuid())
+  invoiceNumber  String        @unique
+  businessId     String? // For business accounts
+  organizationId String? // For enterprise accounts
+  amount         Float
+  tax            Float         @default(0)
+  total          Float
+  currency       String        @default("USD")
+  status         InvoiceStatus @default(PENDING)
+  dueDate        DateTime
+  paidAt         DateTime?
+  paymentMethod  String?
+  notes          String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  // Relationships
+  businessAccount   BusinessAccount?   @relation(fields: [businessId], references: [id], onDelete: SetNull)
+  enterpriseAccount EnterpriseAccount? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  lineItems         InvoiceLineItem[]
+
+  @@index([businessId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model InvoiceLineItem {
+  id          String  @id @default(cuid())
+  invoiceId   String
+  description String
+  quantity    Int
+  unitPrice   Float
+  total       Float
+  orderId     String? // Link to specific order if applicable
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@index([orderId])
+}
+
+// ============================================
+// RECURRING ORDERS (for Business Accounts)
+// ============================================
+
+enum RecurringFrequency {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+}
+
+model RecurringOrder {
+  id                String             @id @default(cuid())
+  businessId        String
+  frequency         RecurringFrequency
+  nextScheduledDate DateTime
+  pickupTime        String // Time of day (e.g., "09:00")
+  isActive          Boolean            @default(true)
+  notes             String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  businessAccount BusinessAccount @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([nextScheduledDate])
+  @@index([isActive])
 }
 
 // ============================================
@@ -335,7 +594,9 @@ enum FulfillmentMode {
 model Order {
   id                 String          @id @default(cuid())
   orderNumber        String          @unique
-  customerId         String
+  customerId         String? // Individual customer (optional)
+  businessId         String? // Business account (optional)
+  branchId           String? // Enterprise branch (optional)
   merchantId         String
   merchantLocationId String
   pickupDriverId     String?
@@ -387,7 +648,9 @@ model Order {
   updatedAt DateTime @updatedAt
 
   // Relationships
-  customer         Customer             @relation(fields: [customerId], references: [id])
+  customer         Customer?            @relation(fields: [customerId], references: [id])
+  businessAccount  BusinessAccount?     @relation(fields: [businessId], references: [id])
+  branch           Branch?              @relation(fields: [branchId], references: [id])
   merchant         Merchant             @relation(fields: [merchantId], references: [id])
   merchantLocation MerchantLocation     @relation(fields: [merchantLocationId], references: [id])
   pickupDriver     Driver?              @relation("DriverPickup", fields: [pickupDriverId], references: [id])
@@ -400,6 +663,8 @@ model Order {
   review           Review?
 
   @@index([customerId])
+  @@index([businessId])
+  @@index([branchId])
   @@index([merchantId])
   @@index([pickupDriverId])
   @@index([deliveryDriverId])
@@ -467,9 +732,11 @@ model Address {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  customer       Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  pickupOrders   Order[]  @relation("PickupAddress")
-  deliveryOrders Order[]  @relation("DeliveryAddress")
+  customer          Customer         @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  pickupOrders      Order[]          @relation("PickupAddress")
+  deliveryOrders    Order[]          @relation("DeliveryAddress")
+  BusinessAccount   BusinessAccount? @relation(fields: [businessAccountId], references: [id])
+  businessAccountId String?
 
   @@index([customerId])
 }
