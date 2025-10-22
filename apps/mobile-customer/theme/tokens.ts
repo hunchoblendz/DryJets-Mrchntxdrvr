@@ -95,6 +95,12 @@ export const colors = {
     tertiary: '#F3F4F6',
   },
 
+  surface: {
+    primary: '#FFFFFF',
+    secondary: '#F9FAFB',
+    tertiary: '#F3F4F6',
+  },
+
   text: {
     primary: '#111827',
     secondary: '#4B5563',
@@ -127,6 +133,14 @@ export const colors = {
     outForDelivery: '#0084FF',
     delivered: '#10B759',
     cancelled: '#FF1C00',
+  },
+
+  // Status Colors
+  status: {
+    warning: '#FFB700',
+    error: '#FF1C00',
+    success: '#10B759',
+    info: '#0084FF',
   },
 };
 
@@ -176,6 +190,85 @@ export const typography = {
   },
 
   fontWeight: {
+    regular: '400' as const,
+    medium: '500' as const,
+    semibold: '600' as const,
+    bold: '700' as const,
+    extrabold: '800' as const,
+  },
+
+  // Body text styles
+  body: {
+    xs: {
+      fontSize: 10,
+      lineHeight: 1.2,
+      fontWeight: '400' as const,
+    },
+    sm: {
+      fontSize: 12,
+      lineHeight: 1.5,
+      fontWeight: '400' as const,
+    },
+    base: {
+      fontSize: 14,
+      lineHeight: 1.5,
+      fontWeight: '400' as const,
+    },
+    lg: {
+      fontSize: 16,
+      lineHeight: 1.5,
+      fontWeight: '400' as const,
+    },
+  },
+
+  // Heading styles
+  heading: {
+    h1: {
+      fontSize: 40,
+      lineHeight: 1.2,
+      fontWeight: '700' as const,
+    },
+    h2: {
+      fontSize: 32,
+      lineHeight: 1.2,
+      fontWeight: '700' as const,
+    },
+    h3: {
+      fontSize: 24,
+      lineHeight: 1.2,
+      fontWeight: '700' as const,
+    },
+    h4: {
+      fontSize: 20,
+      lineHeight: 1.2,
+      fontWeight: '600' as const,
+    },
+    h5: {
+      fontSize: 18,
+      lineHeight: 1.2,
+      fontWeight: '600' as const,
+    },
+    h6: {
+      fontSize: 16,
+      lineHeight: 1.2,
+      fontWeight: '600' as const,
+    },
+  },
+
+  // Alternative property names for compatibility
+  sizes: {
+    xs: 10,
+    sm: 12,
+    base: 14,
+    md: 16,
+    lg: 18,
+    xl: 20,
+    xxl: 24,
+    xxxl: 32,
+    display: 40,
+  },
+
+  weights: {
     regular: '400' as const,
     medium: '500' as const,
     semibold: '600' as const,

@@ -8,6 +8,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.dryjets.customer",
+      "jsEngine": "hermes",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "DryJets needs your location to find nearby cleaners and track deliveries.",
         "NSCameraUsageDescription": "DryJets needs camera access to take photos of items.",

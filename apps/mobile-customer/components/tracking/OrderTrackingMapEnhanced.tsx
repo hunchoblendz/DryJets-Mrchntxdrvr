@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
-import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
+import { SafeMapView as MapView, PROVIDER_GOOGLE } from '../maps/SafeMapView';
 import { colors } from '../../theme/tokens';
 import { EnhancedDriverMarker } from './EnhancedDriverMarker';
 import { InteractivePin } from './InteractivePin';

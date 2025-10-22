@@ -155,4 +155,41 @@ export class NotificationsManager {
   }
 }
 
-export const notificationsManager = NotificationsManager.getInstance();
+// Lazy initialization - defer singleton creation until first use
+// This prevents early initialization issues with Hermes engine
+let _notificationsManager: NotificationsManager | null = null;
+
+export const getNotificationsManager = (): NotificationsManager => {
+  if (!_notificationsManager) {
+    _notificationsManager = NotificationsManager.getInstance();
+  }
+  return _notificationsManager;
+};
+
+// Maintain backward compatibility with existing code
+export const notificationsManager = {
+  get initNotifications() {
+    return getNotificationsManager().initNotifications;
+  },
+  get requestPermissions() {
+    return getNotificationsManager().requestPermissions;
+  },
+  get handleNotification() {
+    return getNotificationsManager().handleNotification;
+  },
+  get scheduleNotification() {
+    return getNotificationsManager().scheduleNotification;
+  },
+  get updateNotificationPreferences() {
+    return getNotificationsManager().updateNotificationPreferences;
+  },
+  get getNotificationPreferences() {
+    return getNotificationsManager().getNotificationPreferences;
+  },
+  get sendLocalNotification() {
+    return getNotificationsManager().sendLocalNotification;
+  },
+  get cancelNotification() {
+    return getNotificationsManager().cancelNotification;
+  },
+} as NotificationsManager;

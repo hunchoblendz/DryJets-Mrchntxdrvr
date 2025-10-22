@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
-import { Marker, Callout } from 'react-native-maps';
+import { SafeMarker as Marker, SafeCallout as Callout } from '../maps/SafeMapView';
 import { colors, typography, spacing } from '../../theme/tokens';
 import { createBounceAnimation, createFadeInAnimation } from '../../lib/tracking/mapAnimations';
 

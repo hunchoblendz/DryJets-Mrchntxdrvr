@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, ActivityIndicator, Alert } from 'react-native';
-import MapView, { Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import { SafeMapView as MapView, SafePolyline as Polyline, PROVIDER_GOOGLE } from '../maps/SafeMapView';
 import { colors } from '../../theme/tokens';
 import { DriverMarker } from './DriverMarker';
 import { DeliveryMarker } from './DeliveryMarker';

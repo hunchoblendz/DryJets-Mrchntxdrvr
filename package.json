@@ -12,12 +12,18 @@
     "nohoist": [
       "**/react-native",
       "**/react-native/**",
+      "**/react-native-*",
+      "**/react-native-*/**",
       "**/expo",
       "**/expo/**",
       "**/expo-*",
       "**/expo-*/**",
       "**/@react-native/**",
-      "**/@expo/**"
+      "**/@expo/**",
+      "**/react-native-maps",
+      "**/react-native-maps/**",
+      "**/@stripe/stripe-react-native",
+      "**/@stripe/stripe-react-native/**"
     ]
   },
   "scripts": {

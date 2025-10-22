@@ -10,34 +10,61 @@ export const initializeSocket = async (token: string): Promise<Socket> => {
     return socket;
   }
 
-  socket = io(API_URL, {
-    auth: {
-      token,
-    },
-    reconnection: true,
-    reconnectionDelay: 1000,
-    reconnectionDelayMax: 5000,
-    reconnectionAttempts: 5,
-    transports: ['websocket', 'polling'],
-  });
+  try {
+    // Hermes-compatible socket initialization with fallback transports
+    socket = io(API_URL, {
+      auth: {
+        token,
+      },
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 5,
+      // Transports are ordered by preference - websocket first, fall back to polling if needed
+      // Hermes engine handles this without issue, but we add error handling for safety
+      transports: ['websocket', 'polling'],
+      // Hermes-specific optimizations
+      maxHttpBufferSize: 1e6, // 1MB - safe for Hermes memory
+    });
 
-  socket.on('connect', () => {
-    console.log('Socket.io connected:', socket?.id);
-  });
+    socket.on('connect', () => {
+      console.log('Socket.io connected:', socket?.id);
+    });
 
-  socket.on('disconnect', (reason) => {
-    console.log('Socket.io disconnected:', reason);
-  });
+    socket.on('disconnect', (reason) => {
+      console.log('Socket.io disconnected:', reason);
+    });
 
-  socket.on('error', (error) => {
-    console.error('Socket.io error:', error);
-  });
+    socket.on('error', (error) => {
+      console.error('Socket.io error:', error);
+      // Log Hermes-specific errors if available
+      if (error instanceof Error && error.stack) {
+        console.error('Socket error stack:', error.stack);
+      }
+    });
 
-  socket.on('connect_error', (error) => {
-    console.error('Socket.io connection error:', error);
-  });
+    socket.on('connect_error', (error) => {
+      console.error('Socket.io connection error:', error);
+      // Attempt fallback to polling if WebSocket fails
+      if (socket && !socket.connected) {
+        try {
+          console.log('Attempting fallback to polling transport...');
+          socket.io.opts.transports = ['polling'];
+        } catch (e) {
+          console.error('Failed to set polling fallback:', e);
+        }
+      }
+    });
 
-  return socket;
+    return socket;
+  } catch (error) {
+    // Hermes-safe error handling for socket initialization
+    console.error('Failed to initialize socket:', error);
+    if (error instanceof Error) {
+      console.error('Socket init error:', error.message);
+    }
+    throw error;
+  }
 };
 
 export const getSocket = (): Socket | null => {
