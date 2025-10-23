@@ -1,125 +1,165 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { ordersApi } from '@/lib/api';
-import { Order, OrderStatus } from '@/types';
-import {
-  formatCurrency,
-  formatDateTime,
-  getOrderStatusColor,
-  getOrderStatusLabel,
-} from '@/lib/utils';
-import { Package, Clock, DollarSign, User } from 'lucide-react';
+import { DashboardLayout } from '@/components/layouts/DashboardLayout';
+import { trpc } from '@/lib/trpc/client';
 import Link from 'next/link';
 
-// Hardcoded customer ID for demo - in real app would come from auth context
-const CUSTOMER_ID = 'cmgvgmqfe00021asc08qavn10';
-
 export default function OrdersPage() {
-  const [statusFilter, setStatusFilter] = useState<OrderStatus | 'ALL'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
   const [page, setPage] = useState(1);
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['orders', CUSTOMER_ID, statusFilter, page],
-    queryFn: async () => {
-      const response = await ordersApi.list({
-        customerId: CUSTOMER_ID,
-        status: statusFilter === 'ALL' ? undefined : statusFilter,
-        page,
-        limit: 20,
-      });
-      return response.data;
-    },
+  const { data, isLoading, error } = trpc.orders.getMyOrders.useQuery({
+    page,
+    limit: 20,
+    status: statusFilter,
   });
 
-  const orders: Order[] = data?.data || [];
+  const orders = data?.data || [];
   const meta = data?.meta;
 
-  const statusCounts = {
-    ALL: meta?.total || 0,
-    RECEIVED_BY_MERCHANT: 0,
-    IN_PROCESS: 0,
-    READY_FOR_DELIVERY: 0,
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold text-gray-900">Orders</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Manage and track your laundry orders
+    <DashboardLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">My Orders</h1>
+          <p className="mt-1 text-sm text-gray-600">
+            Track and manage all your orders
           </p>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-          <StatCard
-            title="Total Orders"
-            value={meta?.total || 0}
-            icon={Package}
-            color="blue"
-          />
-          <StatCard
-            title="New Orders"
-            value={statusCounts.RECEIVED_BY_MERCHANT}
-            icon={Clock}
-            color="orange"
-          />
-          <StatCard
-            title="In Process"
-            value={statusCounts.IN_PROCESS}
-            icon={Package}
-            color="purple"
-          />
-          <StatCard
-            title="Ready"
-            value={statusCounts.READY_FOR_DELIVERY}
-            icon={DollarSign}
-            color="green"
-          />
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow mb-6">
+        <div className="bg-white rounded-lg shadow">
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex flex-wrap gap-2">
-              {(['ALL', 'RECEIVED_BY_MERCHANT', 'IN_PROCESS', 'READY_FOR_DELIVERY', 'OUT_FOR_DELIVERY', 'DELIVERED'] as const).map((status) => (
+              {[
+                { label: 'All Orders', value: undefined },
+                { label: 'Pending', value: 'PENDING' },
+                { label: 'In Progress', value: 'IN_PROGRESS' },
+                { label: 'Completed', value: 'COMPLETED' },
+                { label: 'Cancelled', value: 'CANCELLED' },
+              ].map((filter) => (
                 <button
-                  key={status}
-                  onClick={() => setStatusFilter(status)}
+                  key={filter.label}
+                  onClick={() => setStatusFilter(filter.value)}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    statusFilter === status
+                    statusFilter === filter.value
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  {status === 'ALL' ? 'All Orders' : getOrderStatusLabel(status)}
+                  {filter.label}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Orders List */}
-          <div className="divide-y divide-gray-200">
+          {/* Orders Table */}
+          <div className="overflow-hidden">
             {isLoading ? (
-              <div className="px-6 py-12 text-center text-gray-500">
-                Loading orders...
+              <div className="p-6 space-y-4">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="h-20 bg-gray-200 animate-pulse rounded"></div>
+                ))}
               </div>
             ) : error ? (
-              <div className="px-6 py-12 text-center text-red-600">
+              <div className="p-6 text-center text-red-600">
                 Error loading orders. Please try again.
               </div>
             ) : orders.length === 0 ? (
-              <div className="px-6 py-12 text-center text-gray-500">
-                No orders found
+              <div className="p-12 text-center">
+                <svg
+                  className="mx-auto h-12 w-12 text-gray-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No orders</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Get started by creating a new order.
+                </p>
+                <div className="mt-6">
+                  <Link
+                    href="/orders/new"
+                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                  >
+                    Create New Order
+                  </Link>
+                </div>
               </div>
             ) : (
-              orders.map((order) => <OrderCard key={order.id} order={order} />)
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Order #
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Items
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Total
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {orders.map((order: any) => (
+                    <tr key={order.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        #{order.id.slice(0, 8)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(order.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {order.items?.length || 0} items
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            order.status === 'COMPLETED'
+                              ? 'bg-green-100 text-green-800'
+                              : order.status === 'IN_PROGRESS'
+                              ? 'bg-blue-100 text-blue-800'
+                              : order.status === 'PENDING'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}
+                        >
+                          {order.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                        ${order.total?.toFixed(2) || '0.00'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <Link
+                          href={`/orders/${order.id}`}
+                          className="text-blue-600 hover:text-blue-900"
+                        >
+                          View Details
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </div>
 
@@ -149,98 +189,6 @@ export default function OrdersPage() {
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-function StatCard({
-  title,
-  value,
-  icon: Icon,
-  color,
-}: {
-  title: string;
-  value: number;
-  icon: any;
-  color: string;
-}) {
-  const colorClasses = {
-    blue: 'bg-blue-50 text-blue-600',
-    orange: 'bg-orange-50 text-orange-600',
-    purple: 'bg-purple-50 text-purple-600',
-    green: 'bg-green-50 text-green-600',
-  }[color];
-
-  return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div className="flex items-center">
-        <div className={`p-3 rounded-lg ${colorClasses}`}>
-          <Icon className="w-6 h-6" />
-        </div>
-        <div className="ml-4">
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          <p className="text-2xl font-bold text-gray-900">{value}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function OrderCard({ order }: { order: Order }) {
-  return (
-    <Link
-      href={`/orders/${order.id}`}
-      className="block px-6 py-4 hover:bg-gray-50 transition-colors"
-    >
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
-            <h3 className="text-lg font-semibold text-gray-900">
-              {order.orderNumber}
-            </h3>
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-medium ${getOrderStatusColor(
-                order.status
-              )}`}
-            >
-              {getOrderStatusLabel(order.status)}
-            </span>
-          </div>
-
-          <div className="space-y-1 text-sm text-gray-600">
-            <div className="flex items-center gap-2">
-              <User className="w-4 h-4" />
-              <span>
-                {order.customer?.firstName} {order.customer?.lastName}
-              </span>
-              {order.customer?.user?.phone && (
-                <span className="text-gray-400">
-                  • {order.customer.user.phone}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              <span>{formatDateTime(order.createdAt)}</span>
-            </div>
-            {order.items && order.items.length > 0 && (
-              <div className="flex items-center gap-2">
-                <Package className="w-4 h-4" />
-                <span>{order.items.length} items</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="text-right">
-          <p className="text-2xl font-bold text-gray-900">
-            {formatCurrency(order.totalAmount)}
-          </p>
-          {order.specialInstructions && (
-            <p className="mt-1 text-xs text-gray-500">Has special instructions</p>
-          )}
-        </div>
-      </div>
-    </Link>
+    </DashboardLayout>
   );
 }
