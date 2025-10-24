@@ -10,6 +10,8 @@ import { LeoCreativeDirectorService } from './services/leo-creative-director.ser
 import { SocialSchedulerService } from './services/social-scheduler.service';
 import { SocialPlatformIntegrationService } from './services/social-platform-integration.service';
 import { EmailDesignerService } from './services/email-designer.service';
+import { AnalyticsService } from './services/analytics.service';
+import { AvaOrchestratorService } from './services/ava-orchestrator.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
 import { CreateBlogPostDto } from './dto/create-blog-post.dto';
 import { LaunchCampaignDto, PauseCampaignDto, OptimizeCampaignDto } from './dto/launch-campaign.dto';
@@ -28,6 +30,8 @@ export class MarketingController {
     private readonly socialScheduler: SocialSchedulerService,
     private readonly socialIntegration: SocialPlatformIntegrationService,
     private readonly emailDesigner: EmailDesignerService,
+    private readonly analytics: AnalyticsService,
+    private readonly avaOrchestrator: AvaOrchestratorService,
   ) {}
 
   // ============================================
@@ -620,5 +624,109 @@ export class MarketingController {
   @Post('email/:emailCampaignId/validate')
   async validateEmailCampaign(@Param('emailCampaignId') emailCampaignId: string) {
     return this.emailDesigner.validateCampaign(emailCampaignId);
+  }
+
+  // ============================================
+  // ANALYTICS & REPORTING (Week 10)
+  // ============================================
+
+  @Get('analytics/campaigns/:id/dashboard')
+  async getCampaignAnalyticsDashboard(@Param('id') campaignId: string) {
+    return this.analytics.getCampaignAnalyticsDashboard(campaignId);
+  }
+
+  @Get('analytics/campaigns/:id/channel-metrics')
+  async getChannelMetrics(@Param('id') campaignId: string) {
+    return this.analytics.getChannelMetrics(campaignId);
+  }
+
+  @Get('analytics/campaigns/:id/roi-analysis')
+  async analyzeROI(@Param('id') campaignId: string) {
+    return this.analytics.analyzeROI(campaignId);
+  }
+
+  @Get('analytics/campaigns/:id/trends')
+  async getPerformanceTrends(
+    @Param('id') campaignId: string,
+    @Query('days') days: number = 30,
+  ) {
+    return this.analytics.getPerformanceTrends(campaignId, days);
+  }
+
+  @Get('analytics/campaigns/:id/channel-comparison')
+  async getChannelComparison(@Param('id') campaignId: string) {
+    return this.analytics.getChannelComparison(campaignId);
+  }
+
+  @Post('analytics/campaigns/:id/report')
+  async generateCustomReport(
+    @Param('id') campaignId: string,
+    @Body()
+    body: {
+      reportType: 'summary' | 'detailed' | 'executive';
+      startDate?: string;
+      endDate?: string;
+      channels?: string[];
+    },
+  ) {
+    return this.analytics.generateCustomReport(
+      campaignId,
+      body.reportType,
+      {
+        startDate: body.startDate ? new Date(body.startDate) : undefined,
+        endDate: body.endDate ? new Date(body.endDate) : undefined,
+        channels: body.channels,
+      },
+    );
+  }
+
+  @Post('analytics/campaigns/:id/export')
+  async exportReport(
+    @Param('id') campaignId: string,
+    @Body() body: { reportType?: string; format?: 'csv' | 'json' },
+  ) {
+    return this.analytics.exportReport(
+      campaignId,
+      body.reportType || 'summary',
+      body.format || 'json',
+    );
+  }
+
+  @Get('analytics/campaigns/all/summary')
+  async getAllCampaignsAnalyticsSummary() {
+    return this.analytics.getAllCampaignsAnalyticsSummary();
+  }
+
+  // ============================================
+  // AVA ORCHESTRATOR AGENT (Week 11)
+  // ============================================
+
+  @Post('orchestrator/campaigns/:id/generate-strategy')
+  @Roles('ADMIN')
+  async generateCampaignStrategy(
+    @Param('id') campaignId: string,
+    @Body() body?: { targetAudience?: string; budget?: number; objectives?: string[] },
+  ) {
+    return this.avaOrchestrator.generateCampaignStrategy(campaignId, body);
+  }
+
+  @Get('orchestrator/campaigns/:id/predict-success')
+  async predictCampaignSuccess(@Param('id') campaignId: string) {
+    return this.avaOrchestrator.predictCampaignSuccess(campaignId);
+  }
+
+  @Get('orchestrator/campaigns/:id/recommendations')
+  async getOrchestrationRecommendations(@Param('id') campaignId: string) {
+    return this.avaOrchestrator.getOrchestrationRecommendations(campaignId);
+  }
+
+  @Get('orchestrator/campaigns/:id/failure-recovery')
+  async suggestFailureRecovery(@Param('id') campaignId: string) {
+    return this.avaOrchestrator.suggestFailureRecovery(campaignId);
+  }
+
+  @Get('orchestrator/campaigns/:id/dashboard')
+  async getOrchestrationDashboard(@Param('id') campaignId: string) {
+    return this.avaOrchestrator.getOrchestrationDashboard(campaignId);
   }
 }

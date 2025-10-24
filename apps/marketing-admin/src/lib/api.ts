@@ -110,3 +110,42 @@ export const campaignAPI = {
       body: data,
     }),
 };
+
+// Analytics APIs (Week 10)
+export const analyticsAPI = {
+  getAnalyticsDashboard: (campaignId: string) =>
+    apiCall(`/marketing/analytics/campaigns/${campaignId}/dashboard`),
+
+  getChannelMetrics: (campaignId: string) =>
+    apiCall(`/marketing/analytics/campaigns/${campaignId}/channel-metrics`),
+
+  analyzeROI: (campaignId: string) =>
+    apiCall(`/marketing/analytics/campaigns/${campaignId}/roi-analysis`),
+
+  getPerformanceTrends: (campaignId: string, days: number = 30) =>
+    apiCall(`/marketing/analytics/campaigns/${campaignId}/trends?days=${days}`),
+
+  getChannelComparison: (campaignId: string) =>
+    apiCall(`/marketing/analytics/campaigns/${campaignId}/channel-comparison`),
+
+  generateAnalyticsReport: (campaignId: string, data: any) =>
+    apiCall(`/marketing/analytics/campaigns/${campaignId}/report`, {
+      method: 'POST',
+      body: data,
+    }),
+
+  exportAnalyticsReport: (campaignId: string, data: any) =>
+    apiCall(`/marketing/analytics/campaigns/${campaignId}/export`, {
+      method: 'POST',
+      body: data,
+    }),
+
+  getAllCampaignsAnalytics: () =>
+    apiCall('/marketing/analytics/campaigns/all/summary'),
+};
+
+// Export convenience functions for direct use
+export const api = {
+  ...campaignAPI,
+  ...analyticsAPI,
+};

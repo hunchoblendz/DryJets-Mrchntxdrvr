@@ -12,6 +12,8 @@ import { LeoCreativeDirectorService } from './services/leo-creative-director.ser
 import { SocialSchedulerService } from './services/social-scheduler.service';
 import { SocialPlatformIntegrationService } from './services/social-platform-integration.service';
 import { EmailDesignerService } from './services/email-designer.service';
+import { AnalyticsService } from './services/analytics.service';
+import { AvaOrchestratorService } from './services/ava-orchestrator.service';
 
 @Module({
   imports: [PrismaModule],
@@ -28,6 +30,8 @@ import { EmailDesignerService } from './services/email-designer.service';
     SocialSchedulerService,
     SocialPlatformIntegrationService,
     EmailDesignerService,
+    AnalyticsService,
+    AvaOrchestratorService,
   ],
   exports: [
     MarketingService,
@@ -40,6 +44,8 @@ import { EmailDesignerService } from './services/email-designer.service';
     SocialSchedulerService,
     SocialPlatformIntegrationService,
     EmailDesignerService,
+    AnalyticsService,
+    AvaOrchestratorService,
   ],
 })
 export class MarketingModule {}
