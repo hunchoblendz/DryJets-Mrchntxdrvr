@@ -1,40 +1,81 @@
 'use client'
 
 import Link from 'next/link'
+import { useState } from 'react'
 import { DashboardHeader } from '@/components/dashboard/header'
 import { Button } from '@/components/ui/button'
-import { Megaphone, Plus } from 'lucide-react'
+import { CampaignList } from '@/components/campaigns/campaign-list'
+import { useCampaigns } from '@/lib/hooks/use-campaigns'
+import { Plus, RefreshCw } from 'lucide-react'
 
 export default function CampaignsPage() {
+  const { campaigns, loading, refetch } = useCampaigns()
+  const [status, setStatus] = useState<string | undefined>()
+
   return (
     <div className="flex flex-col gap-8">
       <DashboardHeader
         title="Campaigns"
         description="Manage your multi-channel marketing campaigns"
         action={
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            New Campaign
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+            <Button asChild>
+              <Link href="/campaigns/new">
+                <Plus className="h-4 w-4 mr-2" />
+                New Campaign
+              </Link>
+            </Button>
+          </div>
         }
       />
 
-      <div className="bg-card border border-border rounded-lg p-12 text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-muted rounded-lg mb-4">
-          <Megaphone className="h-8 w-8 text-muted-foreground" />
-        </div>
-        <h2 className="text-lg font-semibold text-foreground mb-2">
-          Coming in Phase 3
-        </h2>
-        <p className="text-muted-foreground max-w-sm mx-auto mb-6">
-          Campaign management interface will be available in Phase 3 Week 9. This will allow you to create, manage, and monitor multi-channel marketing campaigns with Ava's AI assistance.
-        </p>
-        <Link href="/blogs">
-          <Button variant="outline">
-            Go to Blog Management
-          </Button>
-        </Link>
+      <div className="flex gap-2 mb-4">
+        <Button
+          variant={status === undefined ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setStatus(undefined)}
+        >
+          All
+        </Button>
+        <Button
+          variant={status === 'DRAFT' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setStatus('DRAFT')}
+        >
+          Draft
+        </Button>
+        <Button
+          variant={status === 'ACTIVE' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setStatus('ACTIVE')}
+        >
+          Active
+        </Button>
+        <Button
+          variant={status === 'PAUSED' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setStatus('PAUSED')}
+        >
+          Paused
+        </Button>
+        <Button
+          variant={status === 'COMPLETED' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setStatus('COMPLETED')}
+        >
+          Completed
+        </Button>
       </div>
+
+      <CampaignList
+        campaigns={campaigns}
+        onRefresh={refetch}
+        loading={loading}
+      />
     </div>
   )
 }
