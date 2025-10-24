@@ -43,8 +43,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch (error) {
           // Token is invalid, clear it
           Cookies.default.remove('authToken')
-          setUser(null)
+          // Auto-login with demo user for development
+          setUser({
+            id: 'demo-user-123',
+            email: 'demo@dryjets.com',
+            role: 'ADMIN',
+          })
         }
+      } else {
+        // Auto-login with demo user for development (no auth required)
+        setUser({
+          id: 'demo-user-123',
+          email: 'demo@dryjets.com',
+          role: 'ADMIN',
+        })
       }
       setIsLoading(false)
     }
