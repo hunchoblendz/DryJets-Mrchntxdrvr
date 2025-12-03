@@ -9,6 +9,8 @@
  * - WCAG AAA accessibility compliance
  */
 
+@import '../styles/themes.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

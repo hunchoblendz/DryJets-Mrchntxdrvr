@@ -10,7 +10,7 @@ export default function ClientProviders({
   children: React.ReactNode;
 }) {
   return (
-    <ThemeProvider defaultTheme="light" storageKey="dryjets-ui-theme">
+    <ThemeProvider defaultTheme="default" defaultColorMode="light" storageKey="dryjets-ui-theme">
       <Providers>
         {children}
       </Providers>

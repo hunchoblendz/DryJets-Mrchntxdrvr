@@ -6,20 +6,20 @@
  *
  * Features:
  * - Smooth transitions with Framer Motion
- * - Dropdown with Light/Dark/System options
+ * - Dropdown with Light/Dark/System + Theme options
  * - Accessible with keyboard navigation
  * - Persists theme choice via theme-provider
  */
 
 import * as React from 'react';
-import { Moon, Sun, Monitor } from 'lucide-react';
+import { Moon, Sun, Monitor, Check, Palette } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { useTheme } from '@/components/theme-provider';
+import { useTheme, themes } from '@/components/theme-provider';
 import { cn } from '@/lib/utils';
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+  const { theme, colorMode, resolvedColorMode, setTheme, setColorMode } = useTheme();
   const [mounted, setMounted] = React.useState(false);
 
   // Avoid hydration mismatch
@@ -38,19 +38,20 @@ export function ThemeToggle() {
         )}
         aria-label="Toggle theme"
       >
-        <Sun className="h-5 w-5" />
+        <Palette className="h-5 w-5" />
       </button>
     );
   }
 
-  const currentIcon = theme === 'dark' ? Moon : theme === 'light' ? Sun : Monitor;
+  const currentIcon = resolvedColorMode === 'dark' ? Moon : Sun;
+  const currentTheme = themes.find((t) => t.name === theme);
 
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
         <button
           className={cn(
-            'relative p-2 rounded-lg',
+            'relative flex items-center gap-2 px-3 py-2 rounded-lg',
             'text-foreground-secondary dark:text-[#A1A1A6]',
             'hover:bg-background-subtle dark:hover:bg-[#1A1A1D]',
             'transition-colors duration-150',
@@ -58,15 +59,26 @@ export function ThemeToggle() {
           )}
           aria-label="Toggle theme"
         >
+          {/* Theme color dots */}
+          <div className="flex gap-1">
+            <div
+              className="w-3 h-3 rounded-full border border-border"
+              style={{ backgroundColor: currentTheme?.colors.primary }}
+            />
+            <div
+              className="w-3 h-3 rounded-full border border-border"
+              style={{ backgroundColor: currentTheme?.colors.accent }}
+            />
+          </div>
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
-              key={theme}
+              key={resolvedColorMode}
               initial={{ scale: 0.5, rotate: -90, opacity: 0 }}
               animate={{ scale: 1, rotate: 0, opacity: 1 }}
               exit={{ scale: 0.5, rotate: 90, opacity: 0 }}
               transition={{ duration: 0.15, ease: 'easeInOut' }}
             >
-              {React.createElement(currentIcon, { className: 'h-5 w-5' })}
+              {React.createElement(currentIcon, { className: 'h-4 w-4' })}
             </motion.div>
           </AnimatePresence>
         </button>
@@ -75,7 +87,7 @@ export function ThemeToggle() {
       <DropdownMenu.Portal>
         <DropdownMenu.Content
           className={cn(
-            'min-w-[160px] p-1 rounded-lg',
+            'min-w-[240px] p-1 rounded-lg',
             'bg-white dark:bg-[#161618]',
             'border border-[#E5E7EB] dark:border-[#2A2A2D]',
             'shadow-lg',
@@ -85,75 +97,97 @@ export function ThemeToggle() {
           sideOffset={8}
           align="end"
         >
+          {/* Theme Selection */}
+          <DropdownMenu.Label className="px-3 py-1.5 text-xs font-medium text-[#9CA3AF] dark:text-[#636366]">
+            Color Theme
+          </DropdownMenu.Label>
+          {themes.map((t) => (
+            <DropdownMenu.Item key={t.name} asChild>
+              <button
+                onClick={() => setTheme(t.name)}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2 rounded-md',
+                  'text-sm text-[#374151] dark:text-[#FAFAFA]',
+                  'hover:bg-[#F3F4F6] dark:hover:bg-[#1A1A1D]',
+                  'cursor-pointer outline-none',
+                  'transition-colors duration-150'
+                )}
+              >
+                <div className="flex gap-1">
+                  <div
+                    className="w-3 h-3 rounded-full border border-[#E5E7EB] dark:border-[#3A3A3C]"
+                    style={{ backgroundColor: t.colors.primary }}
+                  />
+                  <div
+                    className="w-3 h-3 rounded-full border border-[#E5E7EB] dark:border-[#3A3A3C]"
+                    style={{ backgroundColor: t.colors.accent }}
+                  />
+                </div>
+                <div className="flex-1 text-left">
+                  <div className="text-sm font-medium">{t.label}</div>
+                  <div className="text-xs text-[#9CA3AF] dark:text-[#636366]">{t.description}</div>
+                </div>
+                {theme === t.name && (
+                  <Check className="h-4 w-4 text-primary-600" />
+                )}
+              </button>
+            </DropdownMenu.Item>
+          ))}
+
+          <DropdownMenu.Separator className="my-1 h-px bg-[#E5E7EB] dark:bg-[#2A2A2D]" />
+
+          {/* Appearance Selection */}
+          <DropdownMenu.Label className="px-3 py-1.5 text-xs font-medium text-[#9CA3AF] dark:text-[#636366]">
+            Appearance
+          </DropdownMenu.Label>
           <DropdownMenu.Item asChild>
             <button
-              onClick={() => setTheme('light')}
+              onClick={() => setColorMode('light')}
               className={cn(
                 'w-full flex items-center gap-3 px-3 py-2 rounded-md',
                 'text-sm text-[#374151] dark:text-[#FAFAFA]',
                 'hover:bg-[#F3F4F6] dark:hover:bg-[#1A1A1D]',
                 'cursor-pointer outline-none',
-                'transition-colors duration-150',
-                theme === 'light' && 'bg-[#F3F4F6] dark:bg-[#1A1A1D]'
+                'transition-colors duration-150'
               )}
             >
               <Sun className="h-4 w-4" />
-              <span>Light</span>
-              {theme === 'light' && (
-                <motion.div
-                  className="ml-auto h-1.5 w-1.5 rounded-full bg-primary-600"
-                  layoutId="theme-indicator"
-                  transition={{ duration: 0.2 }}
-                />
-              )}
+              <span className="flex-1 text-left">Light</span>
+              {colorMode === 'light' && <Check className="h-4 w-4 text-primary-600" />}
             </button>
           </DropdownMenu.Item>
 
           <DropdownMenu.Item asChild>
             <button
-              onClick={() => setTheme('dark')}
+              onClick={() => setColorMode('dark')}
               className={cn(
                 'w-full flex items-center gap-3 px-3 py-2 rounded-md',
                 'text-sm text-[#374151] dark:text-[#FAFAFA]',
                 'hover:bg-[#F3F4F6] dark:hover:bg-[#1A1A1D]',
                 'cursor-pointer outline-none',
-                'transition-colors duration-150',
-                theme === 'dark' && 'bg-[#F3F4F6] dark:bg-[#1A1A1D]'
+                'transition-colors duration-150'
               )}
             >
               <Moon className="h-4 w-4" />
-              <span>Dark</span>
-              {theme === 'dark' && (
-                <motion.div
-                  className="ml-auto h-1.5 w-1.5 rounded-full bg-primary-600"
-                  layoutId="theme-indicator"
-                  transition={{ duration: 0.2 }}
-                />
-              )}
+              <span className="flex-1 text-left">Dark</span>
+              {colorMode === 'dark' && <Check className="h-4 w-4 text-primary-600" />}
             </button>
           </DropdownMenu.Item>
 
           <DropdownMenu.Item asChild>
             <button
-              onClick={() => setTheme('system')}
+              onClick={() => setColorMode('system')}
               className={cn(
                 'w-full flex items-center gap-3 px-3 py-2 rounded-md',
                 'text-sm text-[#374151] dark:text-[#FAFAFA]',
                 'hover:bg-[#F3F4F6] dark:hover:bg-[#1A1A1D]',
                 'cursor-pointer outline-none',
-                'transition-colors duration-150',
-                theme === 'system' && 'bg-[#F3F4F6] dark:bg-[#1A1A1D]'
+                'transition-colors duration-150'
               )}
             >
               <Monitor className="h-4 w-4" />
-              <span>System</span>
-              {theme === 'system' && (
-                <motion.div
-                  className="ml-auto h-1.5 w-1.5 rounded-full bg-primary-600"
-                  layoutId="theme-indicator"
-                  transition={{ duration: 0.2 }}
-                />
-              )}
+              <span className="flex-1 text-left">System</span>
+              {colorMode === 'system' && <Check className="h-4 w-4 text-primary-600" />}
             </button>
           </DropdownMenu.Item>
         </DropdownMenu.Content>
