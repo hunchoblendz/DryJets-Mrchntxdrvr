@@ -1,11 +1,11 @@
 {
   "name": "@dryjets/hooks",
-  "version": "0.1.0",
-  "description": "DryJets React Hooks for Network Status and Sync Management",
-  "main": "useNetworkStatus.ts",
-  "types": "useNetworkStatus.ts",
+  "version": "0.2.0",
+  "description": "DryJets React Hooks for Network Status and Utilities",
+  "main": "index.ts",
+  "types": "index.ts",
   "scripts": {},
-  "keywords": ["react", "hooks", "network-status", "offline-first", "dryjets"],
+  "keywords": ["react", "hooks", "network-status", "cloud", "dryjets"],
   "author": "DryJets",
   "license": "MIT",
   "peerDependencies": {

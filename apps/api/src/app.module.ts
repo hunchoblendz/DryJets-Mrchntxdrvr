@@ -15,6 +15,7 @@ import { BusinessAccountsModule } from './modules/business-accounts/business-acc
 import { EnterpriseModule } from './modules/enterprise/enterprise.module';
 import { InvoicesModule } from './modules/invoices/invoices.module';
 import { MarketingModule } from './modules/marketing/marketing.module';
+import { DeliveryModule } from './modules/delivery/delivery.module';
 import { PrismaModule } from './common/prisma/prisma.module';
 
 @Module({
@@ -45,6 +46,7 @@ import { PrismaModule } from './common/prisma/prisma.module';
     EnterpriseModule,
     InvoicesModule,
     MarketingModule,
+    DeliveryModule,
     // DriversModule,  // Temporarily disabled - has compilation errors
     // PaymentsModule,  // Temporarily disabled - has compilation errors
     // NotificationsModule,  // Temporarily disabled - has compilation errors

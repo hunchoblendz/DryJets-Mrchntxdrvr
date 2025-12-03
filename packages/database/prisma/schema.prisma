@@ -9,6 +9,8 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  // Use direct connection for migrations for better stability
+  directUrl = env("DIRECT_DATABASE_URL")
 }
 
 // ============================================
@@ -322,7 +324,7 @@ model InvoiceLineItem {
   quantity    Int
   unitPrice   Float
   total       Float
-  orderId     String? // Link to specific order if applicable
+  orderId     BigInt? // Link to specific order if applicable
 
   invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
@@ -418,7 +420,7 @@ model Driver {
 model DriverEarning {
   id          String    @id @default(cuid())
   driverId    String
-  orderId     String
+  orderId     BigInt
   amount      Float
   tip         Float     @default(0)
   bonus       Float     @default(0)
@@ -592,8 +594,9 @@ enum FulfillmentMode {
 }
 
 model Order {
-  id                 String          @id @default(cuid())
-  orderNumber        String          @unique
+  id                 BigInt          @id @default(autoincrement())
+  orderNumber        String          @unique @default(cuid()) // Full unique identifier
+  shortCode          String          @unique // Last 4-6 digits for easy reference (e.g., "DJ-1234")
   customerId         String? // Individual customer (optional)
   businessId         String? // Business account (optional)
   branchId           String? // Enterprise branch (optional)
@@ -670,12 +673,13 @@ model Order {
   @@index([deliveryDriverId])
   @@index([status])
   @@index([orderNumber])
+  @@index([shortCode])
   @@index([createdAt])
 }
 
 model OrderItem {
   id                  String   @id @default(cuid())
-  orderId             String
+  orderId             BigInt
   serviceId           String
   itemName            String
   description         String?
@@ -697,7 +701,7 @@ model OrderItem {
 
 model OrderStatusHistory {
   id        String      @id @default(cuid())
-  orderId   String
+  orderId   BigInt
   status    OrderStatus
   notes     String?
   latitude  Float?
@@ -763,7 +767,7 @@ enum PaymentMethod {
 
 model Payment {
   id                  String        @id @default(cuid())
-  orderId             String        @unique
+  orderId             BigInt        @unique
   customerId          String
   merchantId          String
   amount              Float
@@ -798,7 +802,7 @@ enum ReviewType {
 
 model Review {
   id         String     @id @default(cuid())
-  orderId    String     @unique
+  orderId    BigInt     @unique
   customerId String
   merchantId String?
   driverId   String?

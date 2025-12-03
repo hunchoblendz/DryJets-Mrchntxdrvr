@@ -1,21 +1,22 @@
 'use client';
 
 /**
- * Sidebar Component v2.0
- * "Precision OS" Navigation
+ * Sidebar Component v3.0
+ * "Dummy User Friendly" Navigation
  *
  * Features:
+ * - Simplified navigation for new users
+ * - 5 primary items always visible
+ * - Secondary items collapsed by default (progressive disclosure)
  * - Clean, minimal design (light/dark mode)
  * - 240px expanded, 64px collapsed
- * - Smooth transitions
- * - Active state with left border accent
- * - Keyboard shortcuts displayed
- * - Collapsible sections
+ * - Smooth animations
  */
 
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home,
   ShoppingCart,
@@ -24,14 +25,13 @@ import {
   BarChart3,
   Settings,
   ChevronLeft,
+  ChevronDown,
   Users,
   Package,
   Calendar,
   FileText,
   CreditCard,
-  Bell,
   HelpCircle,
-  LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge-v2';
@@ -51,7 +51,7 @@ interface SidebarProps {
 }
 
 const navigationItems: NavItem[] = [
-  // Main navigation
+  // Main navigation - Always visible (5 primary items for "dummy users")
   {
     label: 'Dashboard',
     href: '/dashboard',
@@ -61,7 +61,7 @@ const navigationItems: NavItem[] = [
   },
   {
     label: 'Orders',
-    href: '/dashboard/orders',
+    href: '/orders',
     icon: ShoppingCart,
     badge: 12,
     shortcut: '⌘O',
@@ -69,7 +69,7 @@ const navigationItems: NavItem[] = [
   },
   {
     label: 'Equipment',
-    href: '/dashboard/equipment',
+    href: '/equipment',
     icon: Wrench,
     badge: 2,
     shortcut: '⌘E',
@@ -77,61 +77,60 @@ const navigationItems: NavItem[] = [
   },
   {
     label: 'Drivers',
-    href: '/dashboard/drivers',
+    href: '/drivers',
     icon: Truck,
     shortcut: '⌘R',
     section: 'main',
   },
   {
-    label: 'Analytics',
-    href: '/dashboard/analytics',
-    icon: BarChart3,
-    shortcut: '⌘A',
+    label: 'Settings',
+    href: '/settings',
+    icon: Settings,
     section: 'main',
   },
 
-  // Secondary navigation
+  // Secondary navigation - Collapsed by default (power user features)
   {
     label: 'Customers',
-    href: '/dashboard/customers',
+    href: '/customers',
     icon: Users,
     section: 'secondary',
   },
   {
     label: 'Inventory',
-    href: '/dashboard/inventory',
+    href: '/inventory',
     icon: Package,
     section: 'secondary',
   },
   {
     label: 'Schedule',
-    href: '/dashboard/schedule',
+    href: '/schedule',
     icon: Calendar,
     section: 'secondary',
   },
   {
     label: 'Reports',
-    href: '/dashboard/reports',
+    href: '/reports',
     icon: FileText,
     section: 'secondary',
   },
   {
     label: 'Billing',
-    href: '/dashboard/billing',
+    href: '/billing',
     icon: CreditCard,
+    section: 'secondary',
+  },
+  {
+    label: 'Analytics',
+    href: '/analytics',
+    icon: BarChart3,
     section: 'secondary',
   },
 
   // Bottom navigation
   {
-    label: 'Settings',
-    href: '/dashboard/settings',
-    icon: Settings,
-    section: 'bottom',
-  },
-  {
     label: 'Help & Support',
-    href: '/dashboard/help',
+    href: '/help',
     icon: HelpCircle,
     section: 'bottom',
   },
@@ -140,6 +139,7 @@ const navigationItems: NavItem[] = [
 export function Sidebar({ collapsed: controlledCollapsed, onCollapsedChange }: SidebarProps) {
   const pathname = usePathname();
   const [localCollapsed, setLocalCollapsed] = React.useState(false);
+  const [showSecondary, setShowSecondary] = React.useState(false); // Hidden by default for "dummy users"
 
   const collapsed = controlledCollapsed ?? localCollapsed;
   const setCollapsed = onCollapsedChange ?? setLocalCollapsed;
@@ -244,41 +244,63 @@ export function Sidebar({ collapsed: controlledCollapsed, onCollapsedChange }: S
           })}
         </div>
 
-        {/* Secondary Navigation */}
+        {/* Secondary Navigation - Collapsible for "Dummy Users" */}
         {!collapsed && (
           <>
-            <div className="mt-6 mb-2 px-3">
-              <div className="text-xs font-medium text-foreground-tertiary dark:text-[#636366] uppercase tracking-wider">
-                More
-              </div>
-            </div>
-            <div className="space-y-1">
-              {secondaryItems.map((item) => {
-                const Icon = item.icon;
-                const active = isActive(item.href);
+            <button
+              type="button"
+              onClick={() => setShowSecondary(!showSecondary)}
+              className="mt-6 mb-2 px-3 w-full flex items-center justify-between group"
+            >
+              <span className="text-xs font-medium text-foreground-tertiary dark:text-[#636366] uppercase tracking-wider">
+                More Features
+              </span>
+              <ChevronDown
+                className={cn(
+                  'h-4 w-4 text-foreground-tertiary dark:text-[#636366] transition-transform duration-200',
+                  showSecondary && 'rotate-180'
+                )}
+              />
+            </button>
+            <AnimatePresence>
+              {showSecondary && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="space-y-1">
+                    {secondaryItems.map((item) => {
+                      const Icon = item.icon;
+                      const active = isActive(item.href);
 
-                return (
-                  <Link key={item.href} href={item.href}>
-                    <div
-                      className={cn(
-                        'group relative flex items-center gap-3 px-3 py-2.5 rounded-lg',
-                        'transition-all duration-150',
-                        'cursor-pointer',
-                        active
-                          ? 'bg-primary-500/8 text-primary-600 dark:bg-primary-500/10'
-                          : 'text-foreground-secondary dark:text-[#A1A1A6] hover:bg-background-subtle dark:hover:bg-[#1A1A1D] hover:text-foreground-DEFAULT dark:hover:text-[#FAFAFA]'
-                      )}
-                    >
-                      {active && (
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary-500 rounded-full" />
-                      )}
-                      <Icon className="h-5 w-5 flex-shrink-0" />
-                      <span className="flex-1 text-sm font-medium">{item.label}</span>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
+                      return (
+                        <Link key={item.href} href={item.href}>
+                          <div
+                            className={cn(
+                              'group relative flex items-center gap-3 px-3 py-2.5 rounded-lg',
+                              'transition-all duration-150',
+                              'cursor-pointer',
+                              active
+                                ? 'bg-primary-500/8 text-primary-600 dark:bg-primary-500/10'
+                                : 'text-foreground-secondary dark:text-[#A1A1A6] hover:bg-background-subtle dark:hover:bg-[#1A1A1D] hover:text-foreground-DEFAULT dark:hover:text-[#FAFAFA]'
+                            )}
+                          >
+                            {active && (
+                              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary-500 rounded-full" />
+                            )}
+                            <Icon className="h-5 w-5 flex-shrink-0" />
+                            <span className="flex-1 text-sm font-medium">{item.label}</span>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </>
         )}
       </nav>

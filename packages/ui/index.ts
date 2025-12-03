@@ -7,10 +7,13 @@
 // Design Tokens
 export * from './dryjets-tokens';
 
+// Animations
+export * from './animations';
+
 // Components
 export * from './components/DryJetsButton';
-export * from './components/SyncStatusIndicator';
 export * from './components/ToastNotification';
+export * from './components/StepWizard';
 
 // Re-export for convenience
 export { tokens, buttonVariants, statusBadges } from './dryjets-tokens';

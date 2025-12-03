@@ -21,7 +21,6 @@ import {
   Command,
   Wifi,
   WifiOff,
-  RefreshCw,
   Sun,
   Moon,
   Settings,
@@ -45,7 +44,7 @@ interface HeaderProps {
 
 export function Header({ onCommandBarOpen, onQuickActionsOpen }: HeaderProps) {
   const { theme } = useTheme();
-  const { status: networkStatus, pendingSyncCount } = useNetworkStatus();
+  const { status: networkStatus } = useNetworkStatus();
   const [notificationCount, setNotificationCount] = React.useState(3);
 
   const networkStatusConfig = {
@@ -60,12 +59,6 @@ export function Header({ onCommandBarOpen, onQuickActionsOpen }: HeaderProps) {
       label: 'Offline',
       color: 'text-danger-600',
       bgColor: 'bg-danger-500/12',
-    },
-    syncing: {
-      icon: RefreshCw,
-      label: 'Syncing',
-      color: 'text-primary-600',
-      bgColor: 'bg-primary-500/12',
     },
   };
 
@@ -127,13 +120,11 @@ export function Header({ onCommandBarOpen, onQuickActionsOpen }: HeaderProps) {
           <StatusIcon
             className={cn(
               'h-4 w-4',
-              status.color,
-              networkStatus === 'syncing' && 'animate-spin'
+              status.color
             )}
           />
           <span className={cn('text-xs font-medium hidden sm:block', status.color)}>
             {status.label}
-            {pendingSyncCount > 0 && ` (${pendingSyncCount})`}
           </span>
         </div>
 

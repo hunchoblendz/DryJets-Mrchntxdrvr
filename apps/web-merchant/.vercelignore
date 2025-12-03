@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+
+# Build outputs (handled by Vercel)
+.next/
+out/
+dist/
+
+# Development files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+__tests__/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+coverage/
+.nyc_output/
+
+# Storybook (development tool)
+.storybook/
+storybook-static/
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Environment files (secrets)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Misc development files
+.turbo/
+.eslintcache
+.prettierignore
+tsconfig.tsbuildinfo

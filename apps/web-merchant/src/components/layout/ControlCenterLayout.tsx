@@ -5,10 +5,9 @@
  *
  * Features:
  * - Persistent sidebar navigation with collapsible state
- * - Network status widget in header
- * - Pending sync count badge
+ * - Network status indicator (online/offline only)
  * - Dark theme with neon accents
- * - Keyboard shortcuts (⌘K for search, ⌘B for toggle sidebar)
+ * - Keyboard shortcuts (Cmd+K for search, Cmd+B for toggle sidebar)
  */
 
 import { useState, useEffect, ReactNode } from 'react';
@@ -26,8 +25,6 @@ import {
   X,
   Wifi,
   WifiOff,
-  RefreshCw,
-  AlertCircle,
   ChevronLeft,
   Search,
   Bell,
@@ -35,16 +32,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  useNetworkStatus,
-  useIsOnline,
-  useIsSyncing,
-  usePendingCount,
-  useLastSync,
-  formatTimeSinceSync,
-  getNetworkStatusDisplay,
-} from '../../../../../packages/hooks/useNetworkStatus';
-import { NetworkStatus } from '../../../../../packages/storage/web';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
 /**
  * Navigation items
@@ -97,26 +85,19 @@ export function ControlCenterLayout({ children }: ControlCenterLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Network status hooks
-  const networkStatus = useNetworkStatus((state) => state.status);
-  const isOnline = useIsOnline();
-  const isSyncing = useIsSyncing();
-  const pendingCount = usePendingCount();
-  const { date: lastSyncDate, error: lastSyncError } = useLastSync();
-  const triggerSync = useNetworkStatus((state) => state.triggerSync);
-
-  const statusDisplay = getNetworkStatusDisplay(networkStatus);
+  // Simple network status (cloud-only)
+  const { status: networkStatus, isOnline } = useNetworkStatus();
 
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // ⌘B or Ctrl+B - Toggle sidebar
+      // Cmd+B or Ctrl+B - Toggle sidebar
       if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
         e.preventDefault();
         setSidebarCollapsed((prev) => !prev);
       }
 
-      // ⌘K or Ctrl+K - Search (placeholder)
+      // Cmd+K or Ctrl+K - Search (placeholder)
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         console.log('Search shortcut triggered');
@@ -231,7 +212,7 @@ export function ControlCenterLayout({ children }: ControlCenterLayoutProps) {
             <button className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg bg-background-subtle border border-border-subtle text-foreground-tertiary hover:border-border-hover transition-colors">
               <Search className="h-4 w-4" />
               <span className="text-sm">Search...</span>
-              <kbd className="ml-4 px-1.5 py-0.5 rounded bg-background-darker text-xs">⌘K</kbd>
+              <kbd className="ml-4 px-1.5 py-0.5 rounded bg-background-darker text-xs">Cmd+K</kbd>
             </button>
           </div>
 
@@ -241,59 +222,34 @@ export function ControlCenterLayout({ children }: ControlCenterLayoutProps) {
             <div
               className={cn(
                 'flex items-center gap-3 px-4 py-2 rounded-lg border transition-all',
-                networkStatus === NetworkStatus.ONLINE &&
-                  'bg-success-500/10 border-success-500/30',
-                networkStatus === NetworkStatus.SYNCING &&
-                  'bg-primary-500/10 border-primary-500/30',
-                networkStatus === NetworkStatus.OFFLINE &&
-                  'bg-danger-500/10 border-danger-500/30'
+                isOnline
+                  ? 'bg-success-500/10 border-success-500/30'
+                  : 'bg-danger-500/10 border-danger-500/30'
               )}
             >
               {/* Status icon */}
               <div className="relative">
-                {networkStatus === NetworkStatus.ONLINE && (
+                {isOnline ? (
                   <Wifi className="h-4 w-4 text-success-500" />
-                )}
-                {networkStatus === NetworkStatus.SYNCING && (
-                  <RefreshCw className="h-4 w-4 text-primary-500 animate-spin" />
-                )}
-                {networkStatus === NetworkStatus.OFFLINE && (
+                ) : (
                   <WifiOff className="h-4 w-4 text-danger-500" />
-                )}
-                {/* Pending count badge */}
-                {pendingCount > 0 && (
-                  <div className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-warning-500 flex items-center justify-center">
-                    <span className="text-white text-xs font-bold leading-none">
-                      {pendingCount > 9 ? '9+' : pendingCount}
-                    </span>
-                  </div>
                 )}
               </div>
 
               {/* Status text */}
               <div className="hidden md:block">
-                <p className="text-sm font-semibold" style={{ color: statusDisplay.color }}>
-                  {statusDisplay.label}
+                <p
+                  className={cn(
+                    'text-sm font-semibold',
+                    isOnline ? 'text-success-500' : 'text-danger-500'
+                  )}
+                >
+                  {isOnline ? 'Online' : 'Offline'}
                 </p>
                 <p className="text-xs text-foreground-tertiary">
-                  {lastSyncError
-                    ? `Error: ${lastSyncError.substring(0, 20)}...`
-                    : `Synced ${formatTimeSinceSync(lastSyncDate)}`}
+                  {isOnline ? 'Connected to cloud' : 'No connection'}
                 </p>
               </div>
-
-              {/* Sync button */}
-              {isOnline && !isSyncing && pendingCount > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => triggerSync()}
-                  className="ml-2 h-8 px-3 text-xs"
-                  title="Sync now"
-                >
-                  Sync Now
-                </Button>
-              )}
             </div>
 
             {/* Notifications */}
@@ -314,37 +270,14 @@ export function ControlCenterLayout({ children }: ControlCenterLayoutProps) {
 
         {/* Page Content */}
         <main className="flex-1 overflow-auto bg-background-DEFAULT">
-          {/* Alert banner for sync errors */}
-          {lastSyncError && (
-            <div className="bg-danger-500/10 border-b border-danger-500/30 px-6 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <AlertCircle className="h-5 w-5 text-danger-500" />
-                <div>
-                  <p className="text-sm font-semibold text-danger-500">Sync Error</p>
-                  <p className="text-xs text-foreground-tertiary">{lastSyncError}</p>
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => triggerSync()}
-                disabled={isSyncing}
-              >
-                Retry
-              </Button>
-            </div>
-          )}
-
           {/* Alert banner for offline mode */}
           {!isOnline && (
             <div className="bg-warning-500/10 border-b border-warning-500/30 px-6 py-3 flex items-center gap-3">
               <WifiOff className="h-5 w-5 text-warning-500" />
               <div>
-                <p className="text-sm font-semibold text-warning-500">Working Offline</p>
+                <p className="text-sm font-semibold text-warning-500">You are Offline</p>
                 <p className="text-xs text-foreground-tertiary">
-                  {pendingCount > 0
-                    ? `${pendingCount} items will sync when connection is restored`
-                    : 'Changes will sync automatically when online'}
+                  Please check your internet connection. Changes cannot be saved while offline.
                 </p>
               </div>
             </div>

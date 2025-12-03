@@ -1,0 +1,13 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer glow -->
+  <circle cx="24" cy="24" r="20" fill="#0A78FF" fill-opacity="0.2"/>
+  <!-- Main circle -->
+  <circle cx="24" cy="24" r="16" fill="#0A78FF" stroke="#FFFFFF" stroke-width="3"/>
+  <!-- Truck icon simplified -->
+  <rect x="16" y="20" width="12" height="8" rx="1" fill="#FFFFFF"/>
+  <rect x="28" y="22" width="5" height="6" rx="1" fill="#FFFFFF"/>
+  <circle cx="19" cy="28" r="2" fill="#0A78FF"/>
+  <circle cx="30" cy="28" r="2" fill="#0A78FF"/>
+  <!-- Direction indicator -->
+  <path d="M24 10L28 16H20L24 10Z" fill="#FFFFFF"/>
+</svg>
