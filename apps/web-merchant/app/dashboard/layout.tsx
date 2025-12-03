@@ -8,7 +8,6 @@
 import { useState } from 'react';
 import { Sidebar } from '@/components/navigation/Sidebar';
 import { Header } from '@/components/navigation/Header';
-import { OfflineBanner } from '@/components/ui/offline-banner';
 
 export default function DashboardLayout({
   children,
@@ -38,9 +37,6 @@ export default function DashboardLayout({
             console.log('Quick actions triggered');
           }}
         />
-
-        {/* Offline/Syncing Banner */}
-        <OfflineBanner />
 
         {/* Page Content Workspace */}
         <main className="flex-1 overflow-auto bg-white dark:bg-[#0F1419]">

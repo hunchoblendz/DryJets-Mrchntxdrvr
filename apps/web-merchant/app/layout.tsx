@@ -1,8 +1,6 @@
 import { Inter, Poppins } from 'next/font/google';
-import { ThemeProvider } from '@/components/theme-provider';
-import { Providers } from './providers';
-import { Toaster } from '@/components/ui/toaster';
 import '../src/app/globals-v2.css';
+import ClientProviders from './client-providers';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -30,12 +28,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${poppins.variable}`}>
-        <ThemeProvider defaultTheme="light" storageKey="dryjets-ui-theme">
-          <Providers>
-            {children}
-          </Providers>
-          <Toaster />
-        </ThemeProvider>
+        <ClientProviders>
+          {children}
+        </ClientProviders>
       </body>
     </html>
   );

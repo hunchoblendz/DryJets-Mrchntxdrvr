@@ -9,13 +9,17 @@
  */
 
 import * as React from 'react';
-import { Package, DollarSign, TrendingUp, Truck, MapPin, AlertCircle, CheckCircle2, Zap } from 'lucide-react';
+import { Package, DollarSign, TrendingUp, Truck } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { KPICard, KPIGrid, ComparisonKPICard } from '@/components/dashboard/KPICard';
 import { DataTable, Column } from '@/components/dashboard/DataTable';
 import { LocationSelector, useLocationSelection } from '@/components/dashboard/LocationSelector';
 import { WorkflowStepper } from '@/components/workflow/WorkflowStepper';
 import { Badge } from '@/components/ui/badge-v2';
 import { Button } from '@/components/ui/button-v2';
+
+// Type cast helper for Lucide icons to fix React 18 type mismatch
+const asIcon = (Icon: LucideIcon) => Icon as React.ComponentType<{ className?: string }>;
 
 // Mock data
 const mockLocations = [
@@ -155,7 +159,7 @@ export default function DashboardPreviewPage() {
               title="Today's Orders"
               value={24}
               trend={{ value: 12.5, direction: 'up', period: 'day' }}
-              icon={Package}
+              icon={asIcon(Package)}
               sparklineData={[18, 22, 19, 24, 21, 24]}
             />
 
@@ -163,7 +167,7 @@ export default function DashboardPreviewPage() {
               title="Revenue"
               value="$1,245"
               trend={{ value: 8.3, direction: 'up', period: 'day' }}
-              icon={DollarSign}
+              icon={asIcon(DollarSign)}
               variant="success"
               sparklineData={[950, 1100, 980, 1200, 1150, 1245]}
             />
@@ -172,14 +176,14 @@ export default function DashboardPreviewPage() {
               title="Avg Order"
               value="$52"
               trend={{ value: 3.2, direction: 'up' }}
-              icon={TrendingUp}
+              icon={asIcon(TrendingUp)}
             />
 
             <KPICard
               title="Pending"
               value={5}
               subtitle="Awaiting pickup"
-              icon={Truck}
+              icon={asIcon(Truck)}
               variant="warning"
             />
           </KPIGrid>
@@ -200,7 +204,7 @@ export default function DashboardPreviewPage() {
               current={{ label: 'This Month', value: '$45,230' }}
               previous={{ label: 'Last Month', value: '$38,940' }}
               trend={{ value: 16.2, direction: 'up' }}
-              icon={DollarSign}
+              icon={asIcon(DollarSign)}
             />
           </div>
         </section>

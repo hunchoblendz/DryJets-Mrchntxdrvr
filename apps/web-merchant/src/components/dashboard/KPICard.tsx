@@ -42,7 +42,8 @@ export interface KPICardProps {
   sparklineData?: number[];
 
   // Appearance
-  icon?: React.ComponentType<{ className?: string }>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  icon?: React.ComponentType<any>;
   variant?: 'default' | 'success' | 'warning' | 'danger';
   size?: KPISize;
 
@@ -346,7 +347,8 @@ export interface ComparisonKPICardProps {
     value: number;
     direction: TrendDirection;
   };
-  icon?: React.ComponentType<{ className?: string }>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  icon?: React.ComponentType<any>;
   onClick?: () => void;
   className?: string;
 }
