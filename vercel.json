@@ -5,12 +5,6 @@
   "installCommand": "npm install",
   "framework": "nextjs",
   "regions": ["iad1"],
-  "functions": {
-    "apps/web-merchant/src/app/api/**/*.ts": {
-      "runtime": "edge",
-      "maxDuration": 30
-    }
-  },
   "headers": [
     {
       "source": "/(.*)",
